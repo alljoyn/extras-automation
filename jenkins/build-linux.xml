@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="Deploy SDK for Linux" default="zip" >
+
+    <!-- properties -->
+
+    <tstamp>
+        <format property="xtstamp"          pattern="yyyyMMdd-HHmmss-SSS" />
+    </tstamp>
+
+    <property file="${basedir}/build.properties" />
+    <property name="workingDir"             location="${user.dir}" />
+
+    <property name="releaseVersion"         value="14.02.00" />
+    <property name="scons.os"               value="linux" />
+    <property name="scons.cpu"              value="x86_64" />
+    <property name="scons.variant"          value="debug" />
+    <condition property="binTag" value="dbg" else="rel" >
+        <contains string="${scons.variant}" substring="debug" />
+    </condition>
+    <condition property="cpuTag" value="x64" else="x86" >
+        <contains string="${scons.cpu}" substring="64" />
+    </condition>
+    <property name="sdkName"                value="alljoyn-${releaseVersion}-linux_${cpuTag}-sdk-${binTag}" />
+
+    <property name="sconsDir"               location="${workingDir}" />
+    <property name="sconsDist"              location="${sconsDir}/build/${scons.os}/${scons.cpu}/${scons.variant}/dist" />
+
+    <property name="sdkWork"                location="${workingDir}/sdks" />
+    <property name="sdkTmp"                 location="${sdkWork}/z-${user.name}-${xtstamp}" />
+    <property name="sdkDir"                 location="${sdkWork}/${sdkName}" />
+    <property name="sdkDist"                location="${sdkDir}" />
+    <property name="sdkZip"                 location="${sdkWork}/${sdkName}.zip" />
+
+    <property name="etcDir"                 location="${basedir}/etc" />
+    <property name="unwantedList"           location="${etcDir}/unwanted.list" />
+    <property name="extrasDir"              location="${basedir}/extras" />
+
+    <available property="extrasDir.exists"  file="${extrasDir}" type="dir" />
+    <available property="extrasList.exists" file="${extrasList}" type="file" />
+
+    <defaultexcludes add="**/.repo" />
+    <defaultexcludes add="**/.sconsign.dblite" />
+
+    <!-- custom tasks -->
+
+    <macrodef name="xcp" description="Deploy any subtree, giving fileset elements" >
+        <attribute name="argv1" description="from path" />
+        <attribute name="argv2" description="to path" />
+        <attribute name="argv3" description="force option, true or false" default="true" />
+        <element name="fileset-elements" implicit="yes"/>
+        <sequential>
+            <echo level="verbose" message="xcp @{argv1} @{argv2} @{argv3}" />
+            <mkdir dir="@{argv2}" />
+            <copy todir="@{argv2}" preservelastmodified="true" overwrite="@{argv3}" force="@{argv3}" >
+                <fileset dir="@{argv1}" >
+                    <fileset-elements/>
+                </fileset>
+            </copy>
+        </sequential>
+    </macrodef> <!-- xcp -->
+
+    <macrodef name="xcpio" description="Deploy any subtree, giving fileset elements, with Unix commands not Ant tasks" >
+        <attribute name="argv1" description="from path" />
+        <attribute name="argv2" description="to path" />
+        <element name="fileset-elements" implicit="yes"/>
+        <sequential>
+
+            <local name="xcpiot"/>
+            <echo level="verbose" message="xcpio @{argv1} @{argv2}" />
+
+            <fileset dir="@{argv1}" id="xcpiot" >
+                <fileset-elements/>
+            </fileset>
+            <pathconvert property="xcpiot" refid="xcpiot" pathsep="${line.separator}" >
+                <map from="@{argv1}/" to="" />
+                <!-- <filtermapper> <replacestring from="${path.separator}" to="${line.separator}" /> </filtermapper> -->
+            </pathconvert>
+            <delete file="${sdkTmp}-xcpiot" />
+            <echo file="${sdkTmp}-xcpiot" force="true" >${xcpiot}${line.separator}</echo>
+
+            <mkdir dir="@{argv2}" />
+            <echo>cd "@{argv1}"${line.separator}cpio &lt; xcpiot -pmdl "@{argv2}"</echo>
+            <echo level="verbose" >xcpiot:${line.separator}${xcpiot}${line.separator}</echo>
+            <exec  dir="@{argv1}" executable="cpio" input="${sdkTmp}-xcpiot" failonerror="true" searchpath="true" >
+                <arg value="-pmdl" />
+                <arg value="@{argv2}" />
+            </exec>
+            <delete file="${sdkTmp}-xcpiot" />
+
+        </sequential>
+    </macrodef> <!-- xcpio -->
+
+    <macrodef name="xzip" description="zip a subtree with Unix commands not Ant tasks" >
+        <attribute name="argv1" description="from path" />
+        <attribute name="argv2" description="to Zip file" />
+        <sequential>
+            <local name="argv1.parent"/>
+            <local name="argv1.name"/>
+            <echo level="verbose" message="xzip @{argv1} @{argv2}" />
+            <dirname  property="argv1.parent" file="@{argv1}" />
+            <basename property="argv1.name"   file="@{argv1}" />
+            <delete file="@{argv2}" />
+            <echo>cd "${argv1.parent}"${line.separator}zip -q -r "@{argv2}" "${argv1.name}"</echo>
+            <exec  dir="${argv1.parent}" executable="zip" inputstring="" failonerror="true" searchpath="true" >
+                <arg value="-q" />
+                <arg value="-r" />
+                <arg value="@{argv2}" />
+                <arg value="${argv1.name}" />
+            </exec>
+        </sequential>
+    </macrodef> <!-- xzip -->
+
+    <macrodef name="xDist" description="Deploy one Dist" >
+        <sequential>
+            <echo level="verbose" message="xDist" />
+            <xcpio argv1="${sconsDist}" argv2="${sdkDist}" >
+                <include name="**" />
+                <excludesfile name="${unwantedList}" />
+            </xcpio>
+            <xcp argv1="${sconsDir}" argv2="${sdkDist}" >
+                <include name="README.md" />
+            </xcp>
+        </sequential>
+    </macrodef> <!-- xDist -->
+
+    <macrodef name="xcpExtras" description="Deploy optional extras into a Dist, with force" >
+        <attribute name="argv1" description="to path" />
+        <sequential>
+            <echo level="verbose" message="xcpExtras @{argv1}" />
+            <xcpio argv1="${extrasDir}" argv2="@{argv1}" >
+                <include name="**" unless="extrasList.exists" />
+                <includesfile name="${extrasList}" if="extrasList.exists" />
+            </xcpio>
+        </sequential>
+    </macrodef> <!-- xcpExtras -->
+
+    <!-- targets -->
+
+    <target name="init" >
+
+        <echo>
+scons.os        ${scons.os}
+scons.cpu       ${scons.cpu}
+scons.variant   ${scons.variant}
+sconsDir        ${sconsDir}
+sconsDist       ${sconsDist}
+
+releaseVersion  ${releaseVersion}
+sdkDir          ${sdkDir}
+sdkZip          ${sdkZip}
+
+unwantedList    ${unwantedList}</echo>
+
+        <echo level="verbose" >
+basedir         ${basedir}
+workingDir      ${workingDir}
+
+scons.os        ${scons.os}
+scons.cpu       ${scons.cpu}
+scons.variant   ${scons.variant}
+sconsDir        ${sconsDir}
+sconsDist       ${sconsDist}
+
+releaseVersion  ${releaseVersion}
+sdkName         ${sdkName}
+sdkWork         ${sdkWork}
+sdkTmp          ${sdkTmp}
+sdkDir          ${sdkDir}
+sdkDist         ${sdkDist}
+sdkZip          ${sdkZip}
+
+etcDir          ${etcDir}
+unwantedList    ${unwantedList}
+
+extrasDir       ${extrasDir}
+extrasList      ${extrasList}
+extrasDir.exists    ${extrasDir.exists}
+extrasList.exists   ${extrasList.exists}</echo>
+
+        <fail message="available checks failed" status="1" >
+            <condition>
+                <not>
+                    <and>
+                        <available file="${sconsDir}"       type="dir" />
+                        <available file="${sconsDist}"      type="dir" />
+                        <available file="${unwantedList}"   type="file" />
+                        <!-- extras are optional -->
+                    </and>
+                </not>
+            </condition>
+        </fail>
+
+        <fail message="contains checks failed" status="1" >
+            <condition>
+                <or>
+                    <contains string="${sconsDir}/build/${scons.os}"    substring="${sdkDir}" />
+                    <not>
+                        <contains string="${sdkDist}"                   substring="${sdkDir}" />
+                    </not>
+                </or>
+            </condition>
+        </fail>
+
+        <fail message="extrasList.exists but not extrasDir.exists" status="1" >
+            <condition>
+                <and>
+                    <isset property="extrasList.exists" />
+                    <not>
+                        <isset property="extrasDir.exists" />
+                    </not>
+                </and>
+            </condition>
+        </fail>
+
+        <fail message="extrasList.exists but no files found" status="1" >
+            <condition>
+                <and>
+                    <isset property="extrasList.exists" />
+                    <resourcecount count="0" >
+                        <fileset dir="${extrasDir}" >
+                            <includesfile name="${extrasList}" />
+                        </fileset>
+                    </resourcecount>
+                </and>
+            </condition>
+        </fail>
+
+        <fail message="not linux or mac" status="1" >
+            <condition>
+                <not>
+                    <or>
+                        <os family="unix" />
+                        <os family="mac" />
+                    </or>
+                </not>
+            </condition>
+        </fail>
+
+    </target> <!-- init -->
+
+    <target name="clean" depends="init" >
+        <local  name="sdkDir.parent" />
+        <local  name="sdkZip.parent" />
+        <local  name="sdkTmp.parent" />
+        <dirname property="sdkDir.parent" file="${sdkDir}" />
+        <dirname property="sdkZip.parent" file="${sdkZip}" />
+        <dirname property="sdkTmp.parent" file="${sdkTmp}" />
+        <mkdir  dir="${sdkDir.parent}" />
+        <mkdir  dir="${sdkZip.parent}" />
+        <mkdir  dir="${sdkTmp.parent}" />
+        <delete dir="${sdkDir}" />
+        <delete file="${sdkZip}" />
+        <delete file="${sdkTmp}" />
+    </target>
+
+    <target name="dist" depends="clean" >
+        <xDist />
+    </target>
+
+    <target name="extras" depends="dist" if="extrasDir.exists" >
+        <xcpExtras argv1="${sdkDir}" />
+    </target>
+
+    <target name="zip" depends="extras" >
+        <xzip argv1="${sdkDir}" argv2="${sdkZip}" />
+        <echo>${sdkZip} is ready</echo>
+        <delete dir="${sdkDir}" />
+    </target>
+
+</project>
