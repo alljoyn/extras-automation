@@ -36,6 +36,17 @@
     <property name="sdkDist.dbg"            location="${sdkDir}/${sdkName}-dbg" />
     <property name="sdkDist.rel"            location="${sdkDir}/${sdkName}-rel" />
 
+    <property name="genversion"             location="${sconsDir}/build_core/tools/scons/genversion.py" />
+    <property name="gitDir"                 location="${sconsDir}/.git" />
+    <property name="manifest.dbg"           location="${sconsDist.dbg}/manifest.txt" />
+    <property name="manifest.rel"           location="${sconsDist.rel}/manifest.txt" />
+    <condition property="doManifest" >
+        <and>
+            <available file="${genversion}" type="file" />
+            <available file="${gitDir}" type="dir" />
+        </and>
+    </condition>
+
     <property name="etcDir"                 location="${basedir}/etc" />
     <property name="unwantedList"           location="${etcDir}/unwanted.list" />
     <property name="extrasDir"              location="${basedir}/extras" />
@@ -83,8 +94,8 @@
         <sequential>
             <echo level="verbose" message="xcpExtras @{argv1}" />
             <xcp  argv1="${extrasDir}" argv2="@{argv1}" >
-                <include name="**" unless="extrasList.exists" />
-                <includesfile name="${extrasList}" if="extrasList.exists" />
+                <include name="**" unless="${extrasList.exists}" />
+                <includesfile name="${extrasList}" if="${extrasList.exists}" />
             </xcp>
         </sequential>
     </macrodef> <!-- xcpExtras -->
@@ -98,12 +109,11 @@ scons.os        ${scons.os}
 scons.cpu       ${scons.cpu}
 sconsDir        ${sconsDir}
 sconsDist.dbg   ${sconsDist.dbg}
+doManifest      ${doManifest}
 
 releaseVersion  ${releaseVersion}
 sdkDir          ${sdkDir}
-sdkZip          ${sdkZip}
-
-unwantedList    ${unwantedList}</echo>
+sdkZip          ${sdkZip}</echo>
 
         <echo level="verbose" >
 basedir         ${basedir}
@@ -122,6 +132,11 @@ sdkDir          ${sdkDir}
 sdkDist.dbg     ${sdkDist.dbg}
 sdkDist.rel     ${sdkDist.rel}
 sdkZip          ${sdkZip}
+
+genversion      ${genversion}
+manifest.dbg    ${manifest.dbg}
+manifest.rel    ${manifest.rel}
+doManifest      ${doManifest}
 
 etcDir          ${etcDir}
 unwantedList    ${unwantedList}
@@ -187,7 +202,19 @@ extrasList.exists   ${extrasList.exists}</echo>
 
     </target> <!-- init -->
 
-    <target name="clean" depends="init" >
+    <target name="manifest" depends="init" if="${doManifest}" >
+        <local  name="gitVersion" />
+        <exec executable="python" dir="${sconsDir}" outputproperty="gitVersion" logError="true" inputstring="" searchpath="true" failonerror="true" >
+            <arg value="${genversion}" />
+        </exec>
+        <echo file="${manifest.dbg}" force="true" >${gitVersion}${line.separator}</echo>
+        <echo file="${manifest.rel}" force="true" >${gitVersion}${line.separator}</echo>
+        <echo>
+gitVersion  ${gitVersion}
+        </echo>
+    </target>
+
+    <target name="clean" depends="manifest" >
         <local name="sdkDir.parent" />
         <local name="sdkZip.parent" />
         <dirname property="sdkDir.parent" file="${sdkDir}" />
@@ -203,7 +230,7 @@ extrasList.exists   ${extrasList.exists}</echo>
         <xDist argv1="rel" />
     </target>
 
-    <target name="extras" depends="dist" if="extrasDir.exists" >
+    <target name="extras" depends="dist" if="${extrasDir.exists}" >
         <xcpExtras argv1="${sdkDist.dbg}" />
         <xcpExtras argv1="${sdkDist.rel}" />
     </target>

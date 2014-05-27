@@ -26,6 +26,26 @@
     <property name="sconsDist.sim.dbg"      location="${sconsDir}/build/${scons.os}/arm/iphonesimulator/debug/dist" />
     <property name="sconsDist.sim.rel"      location="${sconsDir}/build/${scons.os}/arm/iphonesimulator/release/dist" />
 
+    <property name="genversion"             location="${sconsDir}/build_core/tools/scons/genversion.py" />
+    <property name="gitDir"                 location="${sconsDir}/.git" />
+    <property name="manifest"               location="${sconsDir}/manifest.txt" />
+    <property name="manifest.x86.dbg"       location="${sconsDist.x86.dbg}/manifest.txt" />
+    <property name="manifest.x86.rel"       location="${sconsDist.x86.rel}/manifest.txt" />
+    <property name="manifest.arm.dbg"       location="${sconsDist.arm.dbg}/manifest.txt" />
+    <property name="manifest.arm.rel"       location="${sconsDist.arm.rel}/manifest.txt" />
+    <property name="manifest.armv7.dbg"     location="${sconsDist.armv7.dbg}/manifest.txt" />
+    <property name="manifest.armv7.rel"     location="${sconsDist.armv7.rel}/manifest.txt" />
+    <property name="manifest.armv7s.dbg"    location="${sconsDist.armv7s.dbg}/manifest.txt" />
+    <property name="manifest.armv7s.rel"    location="${sconsDist.armv7s.rel}/manifest.txt" />
+    <property name="manifest.sim.dbg"       location="${sconsDist.sim.dbg}/manifest.txt" />
+    <property name="manifest.sim.rel"       location="${sconsDist.sim.rel}/manifest.txt" />
+    <condition property="doManifest" >
+        <and>
+            <available file="${genversion}" type="file" />
+            <available file="${gitDir}" type="dir" />
+        </and>
+    </condition>
+
     <property name="sdkWork"                location="${workingDir}/sdks" />
     <property name="sdkTmp"                 location="${sdkWork}/z-${user.name}-${xtstamp}" />
     <property name="sdkDir"                 location="${sdkWork}/${sdkName}" />
@@ -130,6 +150,7 @@
                 <excludesfile name="${unwantedList}" />
                 <exclude name="cpp/docs/**" />  <!-- SDK for osx_ios carries cpp docs separately, outside of "dist" -->
                 <exclude name="*" />            <!-- SDK for osx_ios carries top level "dist" files separately -->
+                <include name="manifest.txt" />
             </xcpio>
         </sequential>
     </macrodef> <!-- xDist -->
@@ -139,8 +160,8 @@
         <sequential>
             <echo level="verbose" message="xcpExtras @{argv1}" />
             <xcpio argv1="${extrasDir}" argv2="@{argv1}" >
-                <include name="**" unless="extrasList.exists" />
-                <includesfile name="${extrasList}" if="extrasList.exists" />
+                <include name="**" unless="${extrasList.exists}" />
+                <includesfile name="${extrasList}" if="${extrasList.exists}" />
             </xcpio>
         </sequential>
     </macrodef> <!-- xcpExtras -->
@@ -153,12 +174,11 @@
 scons.os        ${scons.os}
 sconsDir        ${sconsDir}
 sconsDist.x86.dbg ${sconsDist.x86.dbg}
+doManifest      ${doManifest}
 
 releaseVersion  ${releaseVersion}
 sdkDir          ${sdkDir}
-sdkZip          ${sdkZip}
-
-unwantedList    ${unwantedList}</echo>
+sdkZip          ${sdkZip}</echo>
 
         <echo level="verbose" >
 basedir         ${basedir}
@@ -167,6 +187,11 @@ workingDir      ${workingDir}
 scons.os        ${scons.os}
 sconsDir        ${sconsDir}
 sconsDist.x86.dbg ${sconsDist.x86.dbg}
+
+genversion      ${genversion}
+manifest        ${manifest}
+manifest.x86.dbg ${manifest.x86.dbg}
+doManifest      ${doManifest}
 
 releaseVersion  ${releaseVersion}
 sdkName         ${sdkName}
@@ -253,7 +278,28 @@ extrasList.exists   ${extrasList.exists}</echo>
 
     </target> <!-- init -->
 
-    <target name="clean" depends="init" >
+    <target name="manifest" depends="init" if="${doManifest}" >
+        <local  name="gitVersion" />
+        <exec executable="python" dir="${sconsDir}" outputproperty="gitVersion" logError="true" inputstring="" searchpath="true" failonerror="true" >
+            <arg value="${genversion}" />
+        </exec>
+        <echo file="${manifest}"            force="true" >${gitVersion}${line.separator}</echo>
+        <echo file="${manifest.x86.dbg}"    force="true" >${gitVersion}${line.separator}</echo>
+        <echo file="${manifest.x86.rel}"    force="true" >${gitVersion}${line.separator}</echo>
+        <echo file="${manifest.arm.dbg}"    force="true" >${gitVersion}${line.separator}</echo>
+        <echo file="${manifest.arm.rel}"    force="true" >${gitVersion}${line.separator}</echo>
+        <echo file="${manifest.armv7.dbg}"  force="true" >${gitVersion}${line.separator}</echo>
+        <echo file="${manifest.armv7.rel}"  force="true" >${gitVersion}${line.separator}</echo>
+        <echo file="${manifest.armv7s.dbg}" force="true" >${gitVersion}${line.separator}</echo>
+        <echo file="${manifest.armv7s.rel}" force="true" >${gitVersion}${line.separator}</echo>
+        <echo file="${manifest.sim.dbg}"    force="true" >${gitVersion}${line.separator}</echo>
+        <echo file="${manifest.sim.rel}"    force="true" >${gitVersion}${line.separator}</echo>
+        <echo>
+gitVersion  ${gitVersion}
+        </echo>
+    </target>
+
+    <target name="clean" depends="manifest" >
         <local  name="sdkDir.parent" />
         <local  name="sdkZip.parent" />
         <local  name="sdkTmp.parent" />
@@ -289,6 +335,7 @@ extrasList.exists   ${extrasList.exists}</echo>
             <exclude name="cpp/docs/html/**" />
         </xcpio>
         <xcp   argv1="${sconsDir}" argv2="${sdkDir}" >
+            <include name="manifest.txt" />
             <include name="README.md" />
         </xcp>
         <xcp   argv1="${sconsDir}/build/${scons.os}/x86/debug/dist"     argv2="${sdkDir}" >
@@ -303,7 +350,7 @@ extrasList.exists   ${extrasList.exists}</echo>
         </xcp>
     </target>
 
-    <target name="extras" depends="dist" if="extrasDir.exists" >
+    <target name="extras" depends="dist" if="${extrasDir.exists}" >
         <xcpExtras argv1="${sdkDir}" />
     </target>
 
