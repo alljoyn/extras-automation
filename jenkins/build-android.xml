@@ -357,6 +357,7 @@ apkTmp                      ${apkTmp}</echo>
                         <available file="${ANDROID_NDK}" type="dir" />
                         <available file="${ANDROID_SRC}/out/target/product/generic/system/lib/libcrypto.so" type="file" />
                         <available file="${ANDROID_SRC}/out/target/product/generic/system/lib/libssl.so" type="file" />
+                        <available file="${ANDROID_SDK}/extras/android/compatibility/v4/android-support-v4.jar" type="file" />
                     </and>
                 </not>
             </condition>
@@ -436,6 +437,8 @@ cd "$1"
 echo : ===
 echo : PWD $PWD
 echo : ===
+
+export PATH="${ANDROID_NDK}:$PATH"
 
 t=jni/Android.mk
 if test -f $t
@@ -553,6 +556,8 @@ set +e
 (
 set -ex
 
+export PATH="${ANDROID_SDK}/tools:${ANDROID_SDK}/platform-tools:$PATH"
+
 cd "$argv1"
 echo : ===
 echo : PWD $PWD
@@ -621,6 +626,13 @@ echo : ===
 
     echo : android update project -t "android-${ANDROID_TARGET_API}" -n "$name"
     android 1>&2 update project -t "android-${ANDROID_TARGET_API}" -p . -n "$name"
+
+    case "$name" in
+    ( Event_Action_Browser )
+        echo : android v4 support for one specific app, Event_Action_Browser
+        cp "${ANDROID_SDK}/extras/android/compatibility/v4/android-support-v4.jar" libs
+        ;;
+    esac
 
     echo : ant release
     ant 1>&2 release
