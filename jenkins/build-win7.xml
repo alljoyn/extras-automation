@@ -8,7 +8,7 @@
     <property file="${basedir}/build.properties" />
     <property name="workingDir"             location="${user.dir}" />
 
-    <property name="releaseVersion"         value="14.02.00" />
+    <property name="releaseVersion"         value="0.0.1" />
     <property name="scons.os"               value="win7" />
     <property name="scons.cpu"              value="x86_64" />
     <property name="scons.msvc"             value="11" />
