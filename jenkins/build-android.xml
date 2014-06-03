@@ -300,15 +300,16 @@ gitVersion  ${gitVersion}
     <property name="apkDir"                 location="${workingDir}/apks" />
     <property name="apkTmp"                 location="${apkDir}/z-${user.name}-${xtstamp}" />
 
-    <!-- dev build slave settings -->
-    <!-- property environment="env" / -->
-    <!-- property name="ANDROID_SDK" location="${env.SDK_ROOT}" / -->
-    <!-- property name="ANDROID_SRC" location="${env.android_src}" / -->
-    <!-- property name="ANDROID_NDK" location="${env.android_ndk}" / -->
-    <!-- property name="ANDROID_TARGET_API" value="${env.android_target_api}" / -->
-    <!-- property name="ALLJOYN_KEYSTORE.keystore" location="/opt/AllJoyn_KeyStore/AllJoyn_KeyStore" / -->
-    <!-- property name="ALLJOYN_KEYSTORE.password" location="/opt/AllJoyn_KeyStore/.password" / -->
-    <!-- property name="ALLJOYN_KEYSTORE.alias"    value="alljoyn" / -->
+    <!-- dev build slave settings
+    <property environment="env" />
+    <property name="ANDROID_SDK" location="${env.SDK_ROOT}" />
+    <property name="ANDROID_SRC" location="${env.android_src}" />
+    <property name="ANDROID_NDK" location="${env.android_ndk}" />
+    <property name="ANDROID_TARGET_API" value="${env.android_target_api}" />
+    <property name="ALLJOYN_KEYSTORE.keystore" location="/opt/AllJoyn_KeyStore/AllJoyn_KeyStore" />
+    <property name="ALLJOYN_KEYSTORE.password" location="/opt/AllJoyn_KeyStore/.password" />
+    <property name="ALLJOYN_KEYSTORE.alias"    value="alljoyn" />
+    -->
 
     <!-- AllSeen build slave settings (rac-ord-asa-ci-android-1) -->
     <property name="ANDROID_SDK" location="/srv/jenkins/android-sdk" />
@@ -318,10 +319,29 @@ gitVersion  ${gitVersion}
     <property name="ALLJOYN_KEYSTORE.keystore" location="/opt/keystore/rac-ord-asa-ci-android-1" />
     <property name="ALLJOYN_KEYSTORE.password" location="/opt/keystore/.password" />
     <property name="ALLJOYN_KEYSTORE.alias"    value="AllJoyn" />
+    <property name="androidSupportV4.a"         location="${ANDROID_SDK}/extras/android/support/v4/android-support-v4.jar" />
+    <property name="androidSupportV4.b"         location="${ANDROID_SDK}/extras/android/compatibility/v4/android-support-v4.jar" />
 
     <!-- targets -->
 
     <target name="init-apk" depends="init" >
+
+        <condition property="androidSupportV4"  value="${androidSupportV4.a}" >
+            <and>
+                <not>
+                    <isset property="androidSupportV4" />
+                </not>
+                <available file="${androidSupportV4.a}" />
+            </and>
+        </condition>
+        <condition property="androidSupportV4"  value="${androidSupportV4.b}" >
+            <and>
+                <not>
+                    <isset property="androidSupportV4" />
+                </not>
+                <available file="${androidSupportV4.b}" />
+            </and>
+        </condition>
 
         <echo>
 ANDROID_TARGET_API          ${ANDROID_TARGET_API}</echo>
@@ -330,6 +350,7 @@ ANDROID_TARGET_API          ${ANDROID_TARGET_API}</echo>
 ANDROID_NDK                 ${ANDROID_NDK}
 ANDROID_SDK                 ${ANDROID_SDK}
 ANDROID_SRC                 ${ANDROID_SRC}
+androidSupportV4            ${androidSupportV4}
 ALLJOYN_KEYSTORE.keystore   ${ALLJOYN_KEYSTORE.keystore}
 ALLJOYN_KEYSTORE.password   ${ALLJOYN_KEYSTORE.password}
 ALLJOYN_KEYSTORE.alias      ${ALLJOYN_KEYSTORE.alias}
@@ -357,7 +378,7 @@ apkTmp                      ${apkTmp}</echo>
                         <available file="${ANDROID_NDK}" type="dir" />
                         <available file="${ANDROID_SRC}/out/target/product/generic/system/lib/libcrypto.so" type="file" />
                         <available file="${ANDROID_SRC}/out/target/product/generic/system/lib/libssl.so" type="file" />
-                        <available file="${ANDROID_SDK}/extras/android/compatibility/v4/android-support-v4.jar" type="file" />
+                        <available file="${androidSupportV4}" type="file" />
                     </and>
                 </not>
             </condition>
@@ -375,15 +396,6 @@ apkTmp                      ${apkTmp}</echo>
     </target>
 
     <target name="clean-apk" depends="init-apk,clean" >
-
-        <!-- FIXME : remove when ASACORE-140 is fixed -->
-        <xcpio argv1="${sconsDist}/java/samples/properties/PropertiesClient/libs" argv2="${sconsDist}/cpp/alljoyn_android/bundle_test/BundledClient/libs" argv3="false" >
-            <include name="**/*" />
-        </xcpio>
-        <xcpio argv1="${sconsDist}/java/samples/properties/PropertiesClient/libs" argv2="${sconsDist}/cpp/alljoyn_android/bundle_test/BundledService/libs" argv3="false" >
-            <include name="**/*" />
-        </xcpio>
-        <!-- end : remove when ASACORE-140 is fixed -->
 
         <local  name="apkDir.parent" />
         <local  name="apkTmp.parent" />
@@ -412,6 +424,9 @@ apkTmp                      ${apkTmp}</echo>
             <include name="cpp/alljoyn_android/**/*" />
             <include name="cpp/samples/**/*" />
             <include name="java/samples/**/*" />
+        <!-- FIXME : remove when cpp/alljoyn_android/bundle_test/** is completely deleted -->
+            <exclude name="cpp/alljoyn_android/bundle_test/**/*" />
+        <!-- end : remove -->
             <present targetdir="${apkDir}" >
                 <mapper type="glob" from="*" to="*/AndroidManifest.xml" />
             </present>
@@ -630,7 +645,7 @@ echo : ===
     case "$name" in
     ( Event_Action_Browser )
         echo : android v4 support for one specific app, Event_Action_Browser
-        cp "${ANDROID_SDK}/extras/android/compatibility/v4/android-support-v4.jar" libs
+        cp "${androidSupportV4}" libs
         ;;
     esac
 
