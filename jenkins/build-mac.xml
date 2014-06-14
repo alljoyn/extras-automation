@@ -25,6 +25,11 @@
     <property name="sconsDist.armv7s.rel"   location="${sconsDir}/build/${scons.os}/armv7s/iphoneos/release/dist" />
     <property name="sconsDist.sim.dbg"      location="${sconsDir}/build/${scons.os}/arm/iphonesimulator/debug/dist" />
     <property name="sconsDist.sim.rel"      location="${sconsDir}/build/${scons.os}/arm/iphonesimulator/release/dist" />
+    <!-- these props intentionally duplicate existing props -->
+    <property name="sconsDist.arm386.dbg"   location="${sconsDir}/build/${scons.os}/arm/iphoneos/debug/dist" />
+    <property name="sconsDist.arm386.rel"   location="${sconsDir}/build/${scons.os}/arm/iphoneos/release/dist" />
+    <property name="sconsDist.sim386.dbg"   location="${sconsDir}/build/${scons.os}/arm/iphonesimulator/debug/dist" />
+    <property name="sconsDist.sim386.rel"   location="${sconsDir}/build/${scons.os}/arm/iphonesimulator/release/dist" />
 
     <property name="genversion"             location="${sconsDir}/build_core/tools/scons/genversion.py" />
     <property name="gitDir"                 location="${sconsDir}/.git" />
@@ -60,6 +65,10 @@
     <property name="sdkDist.armv7s.rel"     location="${sdkDir}/build/${scons.os}/armv7s/iphoneos/release/dist" />
     <property name="sdkDist.sim.dbg"        location="${sdkDir}/build/${scons.os}/arm/iphonesimulator/debug/dist" />
     <property name="sdkDist.sim.rel"        location="${sdkDir}/build/${scons.os}/arm/iphonesimulator/release/dist" />
+    <property name="sdkDist.arm386.dbg"     location="${sdkDir}/build/${scons.os}/i386/iphoneos/debug/dist" />
+    <property name="sdkDist.arm386.rel"     location="${sdkDir}/build/${scons.os}/i386/iphoneos/release/dist" />
+    <property name="sdkDist.sim386.dbg"     location="${sdkDir}/build/${scons.os}/i386/iphonesimulator/debug/dist" />
+    <property name="sdkDist.sim386.rel"     location="${sdkDir}/build/${scons.os}/i386/iphonesimulator/release/dist" />
 
     <property name="etcDir"                 location="${basedir}/etc" />
     <property name="unwantedList"           location="${etcDir}/unwanted.list" />
@@ -325,6 +334,10 @@ gitVersion  ${gitVersion}
         <xDist argv1="armv7s"   argv2="rel" />
         <xDist argv1="sim"      argv2="dbg" />
         <xDist argv1="sim"      argv2="rel" />
+        <xDist argv1="arm386"   argv2="dbg" />
+        <xDist argv1="arm386"   argv2="rel" />
+        <xDist argv1="sim386"   argv2="dbg" />
+        <xDist argv1="sim386"   argv2="rel" />
         <xcpio argv1="${sconsDir}/alljoyn_objc"     argv2="${sdkDir}/alljoyn_objc" >
             <include name="**" />
         </xcpio>
