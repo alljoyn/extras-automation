@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="Thin Client SDK for Windows" default="zip" >
+
+    <!-- properties -->
+
+    <tstamp>
+        <format property="xtstamp"          pattern="yyyyMMdd-HHmmss-SSS" />
+    </tstamp>
+
+    <property file="${basedir}/build.properties" />
+    <property name="workingDir"             location="${user.dir}" />
+
+    <property name="releaseVersion"         value="0.0.1" />
+    <property name="scons.os"               value="win7" />
+    <property name="scons.cpu"              value="x86" />
+    <property name="scons.variant"          value="debug" />
+    <property name="sdkName"                value="alljoyn-${releaseVersion}-thin_client-sdk-windows" />
+
+    <property name="srcDir.ajtcl"           location="${workingDir}/ajtcl" />
+    <property name="srcDir.alljoyn"         location="${workingDir}/alljoyn" />
+    <property name="sconsDir"               location="${srcDir.alljoyn}" />
+    <property name="sconsSampleDaemon"      location="${sconsDir}/build/${scons.os}/${scons.cpu}/${scons.variant}/dist/cpp/bin/samples/SampleDaemon.exe" />
+
+    <property name="sdkWork"                location="${workingDir}/sdks" />
+    <property name="sdkTmp"                 location="${sdkWork}/z-${user.name}-${xtstamp}" />
+    <property name="sdkDir"                 location="${sdkWork}/${sdkName}" />
+    <property name="sdkZip"                 location="${sdkWork}/${sdkName}.zip" />
+
+    <property name="genversion"             location="${srcDir.alljoyn}/build_core/tools/scons/genversion.py" />
+    <condition property="doManifest" >
+        <and>
+            <available file="${genversion}"             type="file" />
+            <available file="${srcDir.ajtcl}/.git"      type="dir" />
+            <available file="${srcDir.alljoyn}/.git"    type="dir" />
+        </and>
+    </condition>
+
+    <condition property="doDoxygen" >
+        <not>
+            <available file="${srcDir.ajtcl}/html/index.html" type="file" />
+        </not>
+    </condition>
+
+    <property name="etcDir"                 location="${basedir}/etc" />
+    <property name="extrasDir"              location="${basedir}/extras" />
+
+    <available property="extrasDir.exists"  file="${extrasDir}" type="dir" />
+    <available property="extrasList.exists" file="${extrasList}" type="file" />
+
+    <defaultexcludes add="**/.repo" />
+
+    <!-- custom tasks -->
+
+    <macrodef name="xcp" description="Deploy any subtree, giving fileset elements" >
+        <attribute name="argv1" description="from path" />
+        <attribute name="argv2" description="to path" />
+        <attribute name="argv3" description="force option, true or false" default="true" />
+        <element name="fileset-elements" implicit="yes"/>
+        <sequential>
+            <echo level="verbose" message="xcp @{argv1} @{argv2} @{argv3}" />
+            <mkdir dir="@{argv2}" />
+            <copy todir="@{argv2}" preservelastmodified="true" overwrite="@{argv3}" force="@{argv3}" >
+                <fileset dir="@{argv1}" >
+                    <fileset-elements/>
+                </fileset>
+            </copy>
+        </sequential>
+    </macrodef> <!-- xcp -->
+
+    <macrodef name="xcpExtras" description="Deploy optional extras into a Dist, with force" >
+        <attribute name="argv1" description="to path" />
+        <sequential>
+            <echo level="verbose" message="xcpExtras @{argv1}" />
+            <xcp  argv1="${extrasDir}" argv2="@{argv1}" >
+                <include name="**" unless="${extrasList.exists}" />
+                <includesfile name="${extrasList}" if="${extrasList.exists}" />
+            </xcp>
+        </sequential>
+    </macrodef> <!-- xcpExtras -->
+
+    <!-- targets -->
+
+    <target name="init" >
+ 
+        <echo>
+scons.os        ${scons.os}
+scons.cpu       ${scons.cpu}
+scons.variant   ${scons.variant}
+sconsDir        ${sconsDir}
+sconsSampleDaemon ${sconsSampleDaemon}
+
+srcDir.ajtcl    ${srcDir.ajtcl}
+srcDir.alljoyn  ${srcDir.alljoyn}
+doDoxygen       ${doDoxygen}
+doManifest      ${doManifest}
+
+releaseVersion  ${releaseVersion}
+sdkDir          ${sdkDir}
+sdkZip          ${sdkZip}</echo>
+
+        <echo level="verbose" >
+basedir         ${basedir}
+workingDir      ${workingDir}
+
+scons.os        ${scons.os}
+scons.cpu       ${scons.cpu}
+scons.variant   ${scons.variant}
+sconsDir        ${sconsDir}
+sconsSampleDaemon ${sconsSampleDaemon}
+
+srcDir.ajtcl    ${srcDir.ajtcl}
+srcDir.alljoyn  ${srcDir.alljoyn}
+doDoxygen       ${doDoxygen}
+genversion      ${genversion}
+doManifest      ${doManifest}
+
+releaseVersion  ${releaseVersion}
+sdkName         ${sdkName}
+sdkWork         ${sdkWork}
+sdkTmp          ${sdkTmp}
+sdkDir          ${sdkDir}
+sdkZip          ${sdkZip}
+
+etcDir          ${etcDir}
+extrasDir       ${extrasDir}
+extrasList      ${extrasList}
+extrasDir.exists    ${extrasDir.exists}
+extrasList.exists   ${extrasList.exists}</echo>
+
+        <fail message="available checks failed: ${srcDir.ajtcl}/README.md, ${sconsSampleDaemon}" status="1" >
+            <condition>
+                <not>
+                    <and>
+                        <available file="${srcDir.ajtcl}"               type="dir" />
+                        <available file="${srcDir.ajtcl}/README.md"     type="file" />
+                        <available file="${sconsSampleDaemon}"          type="file" />
+                        <!-- extras are optional -->
+                    </and>
+                </not>
+            </condition>
+        </fail>
+
+        <fail message="extrasList.exists but not extrasDir.exists" status="1" >
+            <condition>
+                <and>
+                    <isset property="extrasList.exists" />
+                    <not>
+                        <isset property="extrasDir.exists" />
+                    </not>
+                </and>
+            </condition>
+        </fail>
+
+        <fail message="extrasList.exists but no files found" status="1" >
+            <condition>
+                <and>
+                    <isset property="extrasList.exists" />
+                    <resourcecount count="0" >
+                        <fileset dir="${extrasDir}" >
+                            <includesfile name="${extrasList}" />
+                        </fileset>
+                    </resourcecount>
+                </and>
+            </condition>
+        </fail>
+
+    </target> <!-- init -->
+
+    <target name="manifest" depends="clean" if="${doManifest}" >
+        <local  name="gitVersion.ajtcl" />
+        <local  name="gitVersion.alljoyn" />
+        <exec executable="python" dir="${srcDir.ajtcl}"     outputproperty="gitVersion.ajtcl"   logError="true" inputstring="" searchpath="true" failonerror="true" >
+            <arg value="${genversion}" />
+        </exec>
+        <exec executable="python" dir="${srcDir.alljoyn}"   outputproperty="gitVersion.alljoyn" logError="true" inputstring="" searchpath="true" failonerror="true" >
+            <arg value="${genversion}" />
+        </exec>
+        <echo file="${sdkDir}/manifest.txt" force="true" >${gitVersion.ajtcl}${line.separator}${gitVersion.alljoyn}${line.separator}</echo>
+        <echo>
+${gitVersion.ajtcl}
+${gitVersion.alljoyn}
+        </echo>
+    </target>
+
+    <target name="doxygen" depends="init" if="${doDoxygen}" >
+        <delete dir="${srcDir.ajtcl}/html" />
+        <exec executable="doxygen" dir="${srcDir.ajtcl}" inputstring="" searchpath="true" failonerror="true" />
+    </target>
+
+    <target name="clean" depends="init" >
+        <local name="sdkDir.parent" />
+        <local name="sdkZip.parent" />
+        <dirname property="sdkDir.parent" file="${sdkDir}" />
+        <dirname property="sdkZip.parent" file="${sdkZip}" />
+        <mkdir dir="${sdkDir.parent}" />
+        <mkdir dir="${sdkZip.parent}" />
+        <delete dir="${sdkDir}" />
+        <delete file="${sdkZip}" />
+    </target>
+
+    <target name="dist" depends="clean,manifest,doxygen" >
+        <fail message="error, no API docs in ${srcDir.ajtcl}/html" status="1" >
+            <condition>
+                <not>
+                    <available file="${srcDir.ajtcl}/html/index.html" type="file" />
+                </not>
+            </condition>
+        </fail>
+        <xcp argv1="${srcDir.ajtcl}" argv2="${sdkDir}" >
+            <include name="README.md" />
+        </xcp>
+        <xcp argv1="${srcDir.ajtcl}" argv2="${sdkDir}/core/ajtcl" >
+            <include name="**" />
+        </xcp>
+        <delete dir="${sdkDir}/core/ajtcl/bsp/due" />
+        <delete dir="${sdkDir}/core/ajtcl/java" />
+        <delete dir="${sdkDir}/core/ajtcl/target/arduino" />
+        <delete dir="${sdkDir}/core/ajtcl/docs/html" quiet="true" />
+        <move  file="${sdkDir}/core/ajtcl/html" todir="${sdkDir}/core/ajtcl/docs"   overwrite="true" force="true" preservelastmodified="true" />
+        <copy  file="${sconsSampleDaemon}"      todir="${sdkDir}/bin"               overwrite="true" force="true" preservelastmodified="true" />  
+    </target>
+
+    <target name="extras" depends="dist" if="${extrasDir.exists}" >
+        <xcpExtras argv1="${sdkDist.dbg}" />
+        <xcpExtras argv1="${sdkDist.rel}" />
+    </target>
+
+    <target name="zip" depends="extras" >
+        <local name="sdkDir.name" />
+        <basename property="sdkDir.name" file="${sdkDir}" />
+        <zip destfile="${sdkZip}" whenempty="fail" duplicate="fail" encoding="UTF-8" createUnicodeExtraFields="always" >
+            <zipfileset dir="${sdkDir}" prefix="${sdkDir.name}" />
+        </zip>
+        <echo>${sdkZip} is ready</echo>
+        <delete dir="${sdkDir}" />
+    </target>
+
+</project>
