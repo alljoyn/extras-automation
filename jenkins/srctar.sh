@@ -19,19 +19,34 @@ set -e
 
 function mkTheTable() {
 
-    cat <<\theTable > $theTable
+    case "$1" in ( "" | *\ * ) fxit 1 "mkTheTable, bad argv1='$1'" ;; esac
+    argv1="$1"
+    shift
+
+    awk <<theTable > $theTable "\$1 \"\" == \"$argv1\"   { t = \"\" ; for( i=2; i<=NF; i++ ) { t = t \" \" \$i ; } ; print t ; next ; }"
 
 # This table defines how to make any kind of srctar we support.
 # Not every srctar in this table is created every time.
-# The script scans the table, selects the rows for the srctar type it wants, and ignores everything else.
 
-# Each row of the table contains:
+# Two passes on this table need to happen in order to write a srctar.
 
-#   type  git c1  c2  top subs
+# First, the text embedded below is written out to a tmp file, by calling function mkTheTable, with arguments.
+# The first argument selects which rows will be written out, by matching the first token on each line seen below.
+# That first token is removed when the line is written out to the tmp file.
+# The second, third, etc arguments are simply expanded wherever they occur in the text as it is written to the tmp file.
+# Note that the first argument to mkTheTable is immediately shifted away, so $1 in the table text actually expands the second argument,
+# $2 expands the third argument, etc.
+# You could build any kind of scheme depending how you coded the table and called the function, but the scheme right now is as follows:
+#   first  arg == the first token in all active lines in this table is either "coreMaster" or "coreR14.06"
+#   second arg == $1 : file version embedded in "name" field : the "0.0.1" in filename "alljoyn-0.0.1-src", for example
+#   third  arg == $2 : coded in "c1" field : as described below: "master", for example
 
+# Second, the tmp file is read by the doWork function, which actually generates srctar files: one srctar file per argument.
+# Each argument names the srctar file to be generated AND selects rows from the tmp file, describing what source goes in it.
+# Rows from the tmp file are as follows
+#   name  git c1  c2  top subs
 # where:
-
-#   type  = name + version of srctar file : ajtcl-0.0.1, for example
+#   name  = complete filename of the srctar : ajtcl-0.0.1-src, for example
 #   git   = git project : core/ajtcl, for example
 #   c1    = first checkout (branch, tag, or rev) to try : RB14.06, for example
 #   c2    = second checkout to try, if checkout c1 fails : master, for example
@@ -39,116 +54,86 @@ function mkTheTable() {
 #   top   = starting from root of git workspace, cd "top" before continuing
 #           embedded "=" is replaced by the string from column two
 #   subs  = starting from "top" (see above), copy "subs"
-#           (think: cd "$top" ; find $subs)
+#           (think: cd "\$top" ; find \$subs)
 #         = "." means everything except .git .repo
 #           embedded "=" is replaced by the string from column two
 
 # NOTE: top and sub cannot both be "."
 
-# type                      git                             c1          c2  top subs
-# ========================  ==============================  ==========  ==  ==  =================================
+#               name                            git                             c1          c2  top subs
+#               ========================        ==============================  ==========  ==  ==  =================================
 
         # combo srctar : master includes everything, but release only includes what is released
 
-# final release by tag
+# release (14.06)
 
-alljoyn-suite-14.06.00_beta core/ajtcl                  v14.06.00_beta  -   .   =
-alljoyn-suite-14.06.00_beta core/alljoyn                v14.06.00_beta  -   .   =
-alljoyn-suite-14.06.00_beta services/base               v14.06.00_beta  -   .   =
-alljoyn-suite-14.06.00_beta services/base_tcl           v14.06.00_beta  -   .   =
-
-# release branch
-
-alljoyn-suite-0.0.1406      core/ajtcl                      RB14.06     -   .   =
-alljoyn-suite-0.0.1406      core/alljoyn                    RB14.06     -   .   =
-alljoyn-suite-0.0.1406      services/base                   RB14.06     -   .   =
-alljoyn-suite-0.0.1406      services/base_tcl               RB14.06     -   .   =
+coreR14.06      alljoyn-suite-${1}-src          core/ajtcl                      ${2}        -   .   =
+coreR14.06      alljoyn-suite-${1}-src          core/alljoyn                    ${2}        -   .   =
+coreR14.06      alljoyn-suite-${1}-src          services/base                   ${2}        -   .   =
+coreR14.06      alljoyn-suite-${1}-src          services/base_tcl               ${2}        -   .   =
 
 # master
 
-alljoyn-suite-0.0.1         core/ajtcl                      master      -   .   =
-alljoyn-suite-0.0.1         core/alljoyn                    master      -   .   =
-alljoyn-suite-0.0.1         services/base                   master      -   .   =
-alljoyn-suite-0.0.1         services/base_tcl               master      -   .   =
-alljoyn-suite-0.0.1         devtools/codegen                master      +   .   =
-alljoyn-suite-0.0.1         data/datadriven_api             master      +   .   =
-alljoyn-suite-0.0.1         services/notification_viewer    master      +   .   =
-alljoyn-suite-0.0.1         lighting/service_framework      master      +   .   =
-alljoyn-suite-0.0.1         compliance/tests                master      +   .   =
+coreMaster      alljoyn-suite-${1}-src          core/ajtcl                      ${2}        -   .   =
+coreMaster      alljoyn-suite-${1}-src          core/alljoyn                    ${2}        -   .   =
+coreMaster      alljoyn-suite-${1}-src          services/base                   ${2}        -   .   =
+coreMaster      alljoyn-suite-${1}-src          services/base_tcl               ${2}        -   .   =
+coreMaster      alljoyn-suite-${1}-src          devtools/codegen                ${2}        -   .   =
+coreMaster      alljoyn-suite-${1}-src          data/datadriven_api             ${2}        -   .   =
+coreMaster      alljoyn-suite-${1}-src          services/notification_viewer    ${2}        -   .   =
+coreMaster      alljoyn-suite-${1}-src          lighting/service_framework      ${2}        -   .   =
+coreMaster      alljoyn-suite-${1}-src          compliance/tests                ${2}        -   .   =
 
-        # ajtcl, alljoyn, lsf srctars : master only for lsf, it is not in the release
+        # ajtcl, alljoyn, lsf srctars : lsf only in master
 
-# final release by tag
+# release (14.06)
 
-alljoyn-14.06.00_beta           core/alljoyn            v14.06.00_beta  -   =   .
-ajtcl-14.06.00_beta             core/ajtcl              v14.06.00_beta  -   =   .
-ajtcl-services-14.06.00_beta    services/base_tcl       v14.06.00_beta  -   =   .
-
-# release branch
-
-alljoyn-0.0.1406            core/alljoyn                    RB14.06     -   =   .
-ajtcl-0.0.1406              core/ajtcl                      RB14.06     -   =   .
-ajtcl-services-0.0.1406     services/base_tcl               RB14.06     -   =   .
+coreR14.06      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
+coreR14.06      ajtcl-${1}-src                  core/ajtcl                      ${2}        -   =   .
+coreR14.06      ajtcl-services-${1}-src         services/base_tcl               ${2}        -   =   .
 
 # master
 
-alljoyn-0.0.1               core/alljoyn                    master      -   =   .
-ajtcl-0.0.1                 core/ajtcl                      master      -   =   .
-ajtcl-services-0.0.1        services/base_tcl               master      -   =   .
-alljoyn-lsf-0.0.1           lighting/service_framework      master      -   =   .
+coreMaster      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
+coreMaster      ajtcl-${1}-src                  core/ajtcl                      ${2}        -   =   .
+coreMaster      ajtcl-services-${1}-src         services/base_tcl               ${2}        -   =   .
+coreMaster      alljoyn-lsf-${1}-src            lighting/service_framework      ${2}        -   =   .
 
         # "services" srctars
 
-# final release by tag
+# release (14.06)
 
     # first alljoyn/build_core
-alljoyn-config-14.06.00_beta            core/alljoyn    v14.06.00_beta  -   .   =/build_core    =/SConstruct    =/README.md
-alljoyn-controlpanel-14.06.00_beta      core/alljoyn    v14.06.00_beta  -   .   =/build_core    =/SConstruct    =/README.md
-alljoyn-notification-14.06.00_beta      core/alljoyn    v14.06.00_beta  -   .   =/build_core    =/SConstruct    =/README.md
-alljoyn-onboarding-14.06.00_beta        core/alljoyn    v14.06.00_beta  -   .   =/build_core    =/SConstruct    =/README.md
-alljoyn-sample_apps-14.06.00_beta       core/alljoyn    v14.06.00_beta  -   .   =/build_core    =/SConstruct    =/README.md
-alljoyn-services_common-14.06.00_beta   core/alljoyn    v14.06.00_beta  -   .   =/build_core    =/SConstruct    =/README.md
+coreR14.06      alljoyn-config-${1}-src                 core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+coreR14.06      alljoyn-controlpanel-${1}-src           core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+coreR14.06      alljoyn-notification-${1}-src           core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+coreR14.06      alljoyn-onboarding-${1}-src             core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+coreR14.06      alljoyn-sample_apps-${1}-src            core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+coreR14.06      alljoyn-services_common-${1}-src        core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
     # then the individual service subtree
-alljoyn-config-14.06.00_beta            services/base   v14.06.00_beta  -   .   =/config            =/sample_apps
-alljoyn-controlpanel-14.06.00_beta      services/base   v14.06.00_beta  -   .   =/controlpanel      =/sample_apps
-alljoyn-notification-14.06.00_beta      services/base   v14.06.00_beta  -   .   =/notification      =/sample_apps
-alljoyn-onboarding-14.06.00_beta        services/base   v14.06.00_beta  -   .   =/onboarding        =/sample_apps
-alljoyn-sample_apps-14.06.00_beta       services/base   v14.06.00_beta  -   .                       =/sample_apps
-alljoyn-services_common-14.06.00_beta   services/base   v14.06.00_beta  -   .   =/services_common   =/sample_apps
+coreR14.06      alljoyn-config-${1}-src                 services/base           ${2}        -   .   =/config            =/sample_apps
+coreR14.06      alljoyn-controlpanel-${1}-src           services/base           ${2}        -   .   =/controlpanel      =/sample_apps
+coreR14.06      alljoyn-notification-${1}-src           services/base           ${2}        -   .   =/notification      =/sample_apps
+coreR14.06      alljoyn-onboarding-${1}-src             services/base           ${2}        -   .   =/onboarding        =/sample_apps
+coreR14.06      alljoyn-sample_apps-${1}-src            services/base           ${2}        -   .                       =/sample_apps
+coreR14.06      alljoyn-services_common-${1}-src        services/base           ${2}        -   .   =/services_common   =/sample_apps
 
-# release branch version
+# master
 
     # first alljoyn/build_core
-alljoyn-config-0.0.1406             core/alljoyn            RB14.06     -   .   =/build_core    =/SConstruct    =/README.md
-alljoyn-controlpanel-0.0.1406       core/alljoyn            RB14.06     -   .   =/build_core    =/SConstruct    =/README.md
-alljoyn-notification-0.0.1406       core/alljoyn            RB14.06     -   .   =/build_core    =/SConstruct    =/README.md
-alljoyn-onboarding-0.0.1406         core/alljoyn            RB14.06     -   .   =/build_core    =/SConstruct    =/README.md
-alljoyn-sample_apps-0.0.1406        core/alljoyn            RB14.06     -   .   =/build_core    =/SConstruct    =/README.md
-alljoyn-services_common-0.0.1406    core/alljoyn            RB14.06     -   .   =/build_core    =/SConstruct    =/README.md
+coreMaster      alljoyn-config-${1}-src                 core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+coreMaster      alljoyn-controlpanel-${1}-src           core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+coreMaster      alljoyn-notification-${1}-src           core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+coreMaster      alljoyn-onboarding-${1}-src             core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+coreMaster      alljoyn-sample_apps-${1}-src            core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+coreMaster      alljoyn-services_common-${1}-src        core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
     # then the individual service subtree
-alljoyn-config-0.0.1406             services/base           RB14.06     -   .   =/config            =/sample_apps
-alljoyn-controlpanel-0.0.1406       services/base           RB14.06     -   .   =/controlpanel      =/sample_apps
-alljoyn-notification-0.0.1406       services/base           RB14.06     -   .   =/notification      =/sample_apps
-alljoyn-onboarding-0.0.1406         services/base           RB14.06     -   .   =/onboarding        =/sample_apps
-alljoyn-sample_apps-0.0.1406        services/base           RB14.06     -   .                       =/sample_apps
-alljoyn-services_common-0.0.1406    services/base           RB14.06     -   .   =/services_common   =/sample_apps
-
-# master branch version
-
-    # first alljoyn/build_core
-alljoyn-config-0.0.1                core/alljoyn            master      -   .   =/build_core    =/SConstruct    =/README.md
-alljoyn-controlpanel-0.0.1          core/alljoyn            master      -   .   =/build_core    =/SConstruct    =/README.md
-alljoyn-notification-0.0.1          core/alljoyn            master      -   .   =/build_core    =/SConstruct    =/README.md
-alljoyn-onboarding-0.0.1            core/alljoyn            master      -   .   =/build_core    =/SConstruct    =/README.md
-alljoyn-sample_apps-0.0.1           core/alljoyn            master      -   .   =/build_core    =/SConstruct    =/README.md
-alljoyn-services_common-0.0.1       core/alljoyn            master      -   .   =/build_core    =/SConstruct    =/README.md
-    # then the individual service subtree
-alljoyn-config-0.0.1                services/base           master      -   .   =/config            =/sample_apps
-alljoyn-controlpanel-0.0.1          services/base           master      -   .   =/controlpanel      =/sample_apps
-alljoyn-notification-0.0.1          services/base           master      -   .   =/notification      =/sample_apps
-alljoyn-onboarding-0.0.1            services/base           master      -   .   =/onboarding        =/sample_apps
-alljoyn-sample_apps-0.0.1           services/base           master      -   .                       =/sample_apps
-alljoyn-services_common-0.0.1       services/base           master      -   .   =/services_common   =/sample_apps
+coreMaster      alljoyn-config-${1}-src                 services/base           ${2}        -   .   =/config            =/sample_apps
+coreMaster      alljoyn-controlpanel-${1}-src           services/base           ${2}        -   .   =/controlpanel      =/sample_apps
+coreMaster      alljoyn-notification-${1}-src           services/base           ${2}        -   .   =/notification      =/sample_apps
+coreMaster      alljoyn-onboarding-${1}-src             services/base           ${2}        -   .   =/onboarding        =/sample_apps
+coreMaster      alljoyn-sample_apps-${1}-src            services/base           ${2}        -   .                       =/sample_apps
+coreMaster      alljoyn-services_common-${1}-src        services/base           ${2}        -   .   =/services_common   =/sample_apps
 theTable
 }
 
@@ -268,28 +253,28 @@ function doWork() {
         echo >&2 "srctar: $srctar"
         echo >&2
 
-        srctarDir="$PWD/depot/$srctar-src"
-        ls -d "$srctarDir" 2>/dev/null && exit 6
+        srctarDir="$PWD/depot/$srctar"
+        ls -d "$srctarDir" 2>/dev/null && fxit 2 "doWork, directory should not exist: srctarDir='$srctarDir'"
         mkdir  "$srctarDir"
 
         set +x
-        while read type git c1 c2 top subs
+        while read name git c1 c2 top subs
         do
-            case "$debug" in ( -* ) echo >&2 "table: $type $git $c1 $c2 $top $subs" ;; esac
+            case "$debug" in ( -* ) echo >&2 "table: $name $git $c1 $c2 $top $subs" ;; esac
             # get next line from table
-            case "$type" in ( "" | \#* ) continue ;;    ( *[\"\'\#]* )  exit 3 ;; ( "$srctar" ) ;; ( * ) continue ;; esac
-            case "$git"  in ( "" ) continue ;;  ( *[\"\'\#\|]* )    exit 3 ;; esac
-            case "$c1"   in ( "" ) continue ;;  ( *[\'\"\#]* )      exit 3 ;; esac
-            case "$c2"   in ( "" ) continue ;;  ( *[\'\"\#]* )      exit 3 ;; esac
-            case "$top"  in ( "" ) continue ;;  ( *[\'\"\#\|]* | /* | *\** )   exit 3 ;; esac
-            case "$subs" in ( "" ) continue ;;  ( *[\'\"\#\|]* )    exit 3 ;; esac
+            case "$name" in ( "" | \#* ) continue ;;    ( *[\"\'\#]* )  fxit 1 "doWork, table, bad name='$name'" ;; ( "$srctar" ) ;; ( * ) continue ;; esac
+            case "$git"  in ( "" ) continue ;;  ( *[\"\'\#\|]* )    fxit 1 "doWork, table, bad git='$git'" ;; esac
+            case "$c1"   in ( "" ) continue ;;  ( *[\'\"\#]* )      fxit 1 "doWork, table, bad c1='$c1'" ;; esac
+            case "$c2"   in ( "" ) continue ;;  ( *[\'\"\#]* )      fxit 1 "doWork, table, bad c2='$c2'" ;; esac
+            case "$top"  in ( "" ) continue ;;  ( *[\'\"\#\|]* | /* | *\** )   fxit 1 "doWork, table, bad top='$top'" ;; esac
+            case "$subs" in ( "" ) continue ;;  ( *[\'\"\#\|]* )    fxit 1 "doWork, table, bad subs='$subs'" ;; esac
             for s in $subs
             do
-                case "$s" in ( /* ) exit 4 ;; esac
-                case "$top" in ( . ) case "$s" in ( .* | *\** ) exit 5 ;; esac ;; esac
+                case "$s" in ( /* ) fxit 1 "doWork, table, subs='$subs', bad s='$s', cannot start with /" ;; esac
+                case "$top" in ( . ) case "$s" in ( .* | *\** ) fxit 1 "doWork, table, subs='$subs', bad s='$s', top and subs cannot both be ." ;; esac ;; esac
             done
 
-            case "$debug" in ( +* ) echo >&2 "table: $type $git $c1 $c2 $top $subs" ;; esac
+            case "$debug" in ( +* ) echo >&2 "table: $name $git $c1 $c2 $top $subs" ;; esac
             set $debug
             prev=${gitRevA["$git"]}
             next="$c1|$c2"
@@ -307,9 +292,9 @@ function doWork() {
                 (
                     cd "gits/$git"
                     git checkout "$c1" && { echo >&3 "tellA[$git]=true" ; exit 0 ; }
-                    case "$c2" in ( - ) exit 2 ;; ( + ) exit 0 ;; esac
+                    case "$c2" in ( - ) fxit 2 "doWork, checkout c1 failed : c1='$c1'" ;; ( + ) exit 0 ;; esac
                     git checkout "$c2" && exit 0
-                    exit 2
+                    fxit 2 "doWork, checkout c2 failed : c2='$c2'"
                 )
                 gitRevA["$git"]="$next"
                 buildInfoA["$git"]=$( python $buildInfo.py "gits/$git" )
@@ -329,10 +314,28 @@ function doWork() {
             set +x
         done < $theTable 3>$tell
         set $debug
-        case "$(<$tell)" in ( "" ) exit 4 ;; esac
+        case "$(<$tell)" in ( "" ) fxit 2 "doWork, no checkout c1 in this srctar was successful" ;; esac
         source $tell
-        ( cd depot && tar -czf "$srctar-src.tar.gz" "$srctar-src" && rm -rf "$srctar-src" )
+        ( cd depot && tar -czf "$srctar.tar.gz" "$srctar" && rm -rf "$srctar" )
     done
+}
+
+function fxit {
+    set +xe
+    local xit="${1:-1}"
+    shift
+    case "$xit" in
+    ( 0 )
+        echo >&2 "$@"
+        echo >&2 exit OK
+    ;;
+    ( * )
+        echo >&2 error: "$@"
+        echo >&2 exit "$xit"
+    ;;
+    esac
+    set $debug
+    exit "$xit"
 }
 
 # script starts here
@@ -344,7 +347,6 @@ buildInfo=/tmp/$$.buildInfo
 rm          -rf $tell $theTable $buildInfo.py $buildInfo.pyc
 trap    "rm -rf $tell $theTable $buildInfo.py $buildInfo.pyc" 0 1 2 3 15
 
-mkTheTable
 mkBuildInfo
 
 rm -rf gits depot
@@ -352,28 +354,57 @@ mkdir gits depot
 
 declare -A gitRevA buildInfoA tellA
 
-url=https://git.allseenalliance.org/gerrit
+export url=https://git.allseenalliance.org/gerrit
 
-doWork alljoyn-suite-0.0.1406
-doWork alljoyn-0.0.1406
-doWork ajtcl-0.0.1406
-doWork ajtcl-services-0.0.1406
-doWork alljoyn-config-0.0.1406
-doWork alljoyn-controlpanel-0.0.1406
-doWork alljoyn-notification-0.0.1406
-doWork alljoyn-onboarding-0.0.1406
-doWork alljoyn-sample_apps-0.0.1406
-doWork alljoyn-services_common-0.0.1406
 
-# activate this block when release tag v14.06.00_beta is set, run the jenkins build manually, then comment out again
+fileVersion=0.0.1
 
-# doWork alljoyn-suite-14.06.00_beta
-# doWork alljoyn-14.06.00_beta
-# doWork ajtcl-14.06.00_beta
-# doWork ajtcl-services-14.06.00_beta
-# doWork alljoyn-config-14.06.00_beta
-# doWork alljoyn-controlpanel-14.06.00_beta
-# doWork alljoyn-notification-14.06.00_beta
-# doWork alljoyn-onboarding-14.06.00_beta
-# doWork alljoyn-sample_apps-14.06.00_beta
+mkTheTable  coreMaster  $fileVersion    master
 
+# activate this block if jenkins triggers builds on master branch
+# doWork alljoyn-suite-$fileVersion-src
+# doWork alljoyn-$fileVersion-src
+# doWork ajtcl-$fileVersion-src
+# doWork ajtcl-services-$fileVersion-src
+# doWork alljoyn-config-$fileVersion-src
+# doWork alljoyn-controlpanel-$fileVersion-src
+# doWork alljoyn-notification-$fileVersion-src
+# doWork alljoyn-onboarding-$fileVersion-src
+# doWork alljoyn-sample_apps-$fileVersion-src
+# doWork alljoyn-services_common-$fileVersion-src
+    # lsf only in master
+# doWork alljoyn-lsf-$fileVersion-src
+
+
+fileVersion=0.0.1406
+
+mkTheTable  coreR14.06  $fileVersion    RB14.06
+
+# activate this block if jenkins triggers builds on release branch
+doWork alljoyn-suite-$fileVersion-src
+doWork alljoyn-$fileVersion-src
+doWork ajtcl-$fileVersion-src
+doWork ajtcl-services-$fileVersion-src
+doWork alljoyn-config-$fileVersion-src
+doWork alljoyn-controlpanel-$fileVersion-src
+doWork alljoyn-notification-$fileVersion-src
+doWork alljoyn-onboarding-$fileVersion-src
+doWork alljoyn-sample_apps-$fileVersion-src
+doWork alljoyn-services_common-$fileVersion-src
+
+
+fileVersion=14.06.00_beta   ## <-- VERSION IN FILENAME GOES HERE
+
+mkTheTable  coreR14.06  $fileVersion  v14.06_beta   ## <- RELEASE TAG GOES HERE
+
+# activate this block when release tag v14.06_beta is set, run the jenkins build manually, then comment out again
+# doWork alljoyn-suite-$fileVersion-src
+# doWork alljoyn-$fileVersion-src
+# doWork ajtcl-$fileVersion-src
+# doWork ajtcl-services-$fileVersion-src
+# doWork alljoyn-config-$fileVersion-src
+# doWork alljoyn-controlpanel-$fileVersion-src
+# doWork alljoyn-notification-$fileVersion-src
+# doWork alljoyn-onboarding-$fileVersion-src
+# doWork alljoyn-sample_apps-$fileVersion-src
+# doWork alljoyn-services_common-$fileVersion-src
