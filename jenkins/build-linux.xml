@@ -24,6 +24,7 @@
 
     <property name="sconsDir"               location="${workingDir}" />
     <property name="sconsDist"              location="${sconsDir}/build/${scons.os}/${scons.cpu}/${scons.variant}/dist" />
+    <property name="sconsJsDoc"             location="${sconsDir}/alljoyn_js/docs/jsdoc" />
 
     <property name="sdkWork"                location="${workingDir}/sdks" />
     <property name="sdkTmp"                 location="${sdkWork}/z-${user.name}-${xtstamp}" />
@@ -169,6 +170,7 @@ scons.cpu       ${scons.cpu}
 scons.variant   ${scons.variant}
 sconsDir        ${sconsDir}
 sconsDist       ${sconsDist}
+sconsJsDoc      ${sconsJsDoc}
 
 releaseVersion  ${releaseVersion}
 sdkName         ${sdkName}
@@ -199,6 +201,14 @@ extrasList.exists   ${extrasList.exists}</echo>
                         <available file="${unwantedList}"   type="file" />
                         <!-- extras are optional -->
                     </and>
+                </not>
+            </condition>
+        </fail>
+
+        <fail message="error, no API docs in ${sconsJsDoc}" status="1" >
+            <condition>
+                <not>
+                    <available file="${sconsJsDoc}/index.html"  type="file" />
                 </not>
             </condition>
         </fail>
@@ -279,6 +289,9 @@ gitVersion  ${gitVersion}
 
     <target name="dist" depends="clean" >
         <xDist />
+        <xcpio argv1="${sconsJsDoc}" argv2="${sdkDist}/js/docs" >
+            <include name="**" />
+        </xcpio>
     </target>
 
     <target name="extras" depends="dist" if="${extrasDir.exists}" >
