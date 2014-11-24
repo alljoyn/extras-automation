@@ -67,37 +67,56 @@ function mkTheTable() {
 
 # release (14.06)
 
+coreR14.06      alljoyn-suite-${1}-src          compliance/tests                ${2}        -   .   =
 coreR14.06      alljoyn-suite-${1}-src          core/ajtcl                      ${2}        -   .   =
 coreR14.06      alljoyn-suite-${1}-src          core/alljoyn                    ${2}        -   .   =
+coreR14.06      alljoyn-suite-${1}-src          devtools/codegen                ${2}        -   .   =
+coreR14.06      alljoyn-suite-${1}-src          lighting/service_framework      ${2}        -   .   =
 coreR14.06      alljoyn-suite-${1}-src          services/base                   ${2}        -   .   =
 coreR14.06      alljoyn-suite-${1}-src          services/base_tcl               ${2}        -   .   =
 
 # master
 
+coreMaster      alljoyn-suite-${1}-src          compliance/tests                ${2}        -   .   =
 coreMaster      alljoyn-suite-${1}-src          core/ajtcl                      ${2}        -   .   =
 coreMaster      alljoyn-suite-${1}-src          core/alljoyn                    ${2}        -   .   =
+coreMaster      alljoyn-suite-${1}-src          core/alljoyn-js                 ${2}        -   .   =
+coreMaster      alljoyn-suite-${1}-src          data/datadriven_api             ${2}        -   .   =
+coreMaster      alljoyn-suite-${1}-src          devtools/codegen                ${2}        -   .   =
+coreMaster      alljoyn-suite-${1}-src          lighting/service_framework      ${2}        -   .   =
 coreMaster      alljoyn-suite-${1}-src          services/base                   ${2}        -   .   =
 coreMaster      alljoyn-suite-${1}-src          services/base_tcl               ${2}        -   .   =
-coreMaster      alljoyn-suite-${1}-src          devtools/codegen                ${2}        -   .   =
-coreMaster      alljoyn-suite-${1}-src          data/datadriven_api             ${2}        -   .   =
 coreMaster      alljoyn-suite-${1}-src          services/notification_viewer    ${2}        -   .   =
-coreMaster      alljoyn-suite-${1}-src          lighting/service_framework      ${2}        -   .   =
-coreMaster      alljoyn-suite-${1}-src          compliance/tests                ${2}        -   .   =
 
-        # ajtcl, alljoyn, lsf srctars : lsf only in master
+# release (14.12) in progress, 2014-11-24
+
+coreR14.12      alljoyn-suite-${1}-src          core/ajtcl                      ${2}        -   .   =
+coreR14.12      alljoyn-suite-${1}-src          core/alljoyn                    ${2}        -   .   =
+
+        # ajtcl, alljoyn, lsf srctars
 
 # release (14.06)
 
-coreR14.06      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
 coreR14.06      ajtcl-${1}-src                  core/ajtcl                      ${2}        -   =   .
 coreR14.06      ajtcl-services-${1}-src         services/base_tcl               ${2}        -   =   .
+coreR14.06      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
+coreR14.06      alljoyn-lsf-${1}-src            lighting/service_framework      ${2}        -   =   .
 
 # master
 
-coreMaster      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
 coreMaster      ajtcl-${1}-src                  core/ajtcl                      ${2}        -   =   .
 coreMaster      ajtcl-services-${1}-src         services/base_tcl               ${2}        -   =   .
+coreMaster      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
+coreMaster      alljoyn-js-${1}-src             core/alljoyn-js                 ${2}        -   =   .
 coreMaster      alljoyn-lsf-${1}-src            lighting/service_framework      ${2}        -   =   .
+
+# release (14.12)
+
+coreR14.12      ajtcl-${1}-src                  core/ajtcl                      ${2}        -   =   .
+coreR14.12      ajtcl-services-${1}-src         services/base_tcl               ${2}        -   =   .
+coreR14.12      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
+coreR14.12      alljoyn-js-${1}-src             core/alljoyn-js                 ${2}        -   =   .
+coreR14.12      alljoyn-lsf-${1}-src            lighting/service_framework      ${2}        -   =   .
 
         # "services" srctars
 
@@ -134,6 +153,23 @@ coreMaster      alljoyn-notification-${1}-src           services/base           
 coreMaster      alljoyn-onboarding-${1}-src             services/base           ${2}        -   .   =/onboarding        =/sample_apps
 coreMaster      alljoyn-sample_apps-${1}-src            services/base           ${2}        -   .                       =/sample_apps
 coreMaster      alljoyn-services_common-${1}-src        services/base           ${2}        -   .   =/services_common   =/sample_apps
+
+# release (14.12) in progress, 2014-11-24
+
+    # first alljoyn/build_core
+coreR14.12      alljoyn-config-${1}-src                 core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+coreR14.12      alljoyn-controlpanel-${1}-src           core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+coreR14.12      alljoyn-notification-${1}-src           core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+coreR14.12      alljoyn-onboarding-${1}-src             core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+coreR14.12      alljoyn-sample_apps-${1}-src            core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+coreR14.12      alljoyn-services_common-${1}-src        core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+    # then the individual service subtree
+coreR14.12      alljoyn-config-${1}-src                 services/base           ${2}   master   .   =/config            =/sample_apps
+coreR14.12      alljoyn-controlpanel-${1}-src           services/base           ${2}   master   .   =/controlpanel      =/sample_apps
+coreR14.12      alljoyn-notification-${1}-src           services/base           ${2}   master   .   =/notification      =/sample_apps
+coreR14.12      alljoyn-onboarding-${1}-src             services/base           ${2}   master   .   =/onboarding        =/sample_apps
+coreR14.12      alljoyn-sample_apps-${1}-src            services/base           ${2}   master   .                       =/sample_apps
+coreR14.12      alljoyn-services_common-${1}-src        services/base           ${2}   master   .   =/services_common   =/sample_apps
 theTable
 }
 
@@ -362,49 +398,51 @@ fileVersion=0.0.1
 mkTheTable  coreMaster  $fileVersion    master
 
 # activate this block if jenkins triggers builds on master branch
-# doWork alljoyn-suite-$fileVersion-src
-# doWork alljoyn-$fileVersion-src
 # doWork ajtcl-$fileVersion-src
 # doWork ajtcl-services-$fileVersion-src
+# doWork alljoyn-$fileVersion-src
 # doWork alljoyn-config-$fileVersion-src
 # doWork alljoyn-controlpanel-$fileVersion-src
+# doWork alljoyn-js-$fileVersion-src
+# doWork alljoyn-lsf-$fileVersion-src
 # doWork alljoyn-notification-$fileVersion-src
 # doWork alljoyn-onboarding-$fileVersion-src
 # doWork alljoyn-sample_apps-$fileVersion-src
 # doWork alljoyn-services_common-$fileVersion-src
-    # lsf only in master
-# doWork alljoyn-lsf-$fileVersion-src
+# doWork alljoyn-suite-$fileVersion-src
 
 
 fileVersion=0.0.1406
 
 mkTheTable  coreR14.06  $fileVersion    RB14.06
 
-# activate this block if jenkins triggers builds on release branch
-doWork alljoyn-suite-$fileVersion-src
-doWork alljoyn-$fileVersion-src
-doWork ajtcl-$fileVersion-src
-doWork ajtcl-services-$fileVersion-src
-doWork alljoyn-config-$fileVersion-src
-doWork alljoyn-controlpanel-$fileVersion-src
-doWork alljoyn-notification-$fileVersion-src
-doWork alljoyn-onboarding-$fileVersion-src
-doWork alljoyn-sample_apps-$fileVersion-src
-doWork alljoyn-services_common-$fileVersion-src
-
-
-fileVersion=14.06.00_beta   ## <-- VERSION IN FILENAME GOES HERE
-
-mkTheTable  coreR14.06  $fileVersion  v14.06_beta   ## <- RELEASE TAG GOES HERE
-
-# activate this block when release tag v14.06_beta is set, run the jenkins build manually, then comment out again
-# doWork alljoyn-suite-$fileVersion-src
-# doWork alljoyn-$fileVersion-src
+# activate this block if jenkins triggers builds on branch RB14.06
 # doWork ajtcl-$fileVersion-src
 # doWork ajtcl-services-$fileVersion-src
+# doWork alljoyn-$fileVersion-src
 # doWork alljoyn-config-$fileVersion-src
 # doWork alljoyn-controlpanel-$fileVersion-src
+# doWork alljoyn-lsf-$fileVersion-src
 # doWork alljoyn-notification-$fileVersion-src
 # doWork alljoyn-onboarding-$fileVersion-src
 # doWork alljoyn-sample_apps-$fileVersion-src
 # doWork alljoyn-services_common-$fileVersion-src
+# doWork alljoyn-suite-$fileVersion-src
+
+
+fileVersion=0.0.1412
+
+mkTheTable  coreR14.12  $fileVersion    RB14.12
+
+# activate this block if jenkins triggers builds on branch RB14.12
+# doWork ajtcl-$fileVersion-src
+# doWork ajtcl-services-$fileVersion-src
+# doWork alljoyn-$fileVersion-src
+# doWork alljoyn-config-$fileVersion-src
+# doWork alljoyn-controlpanel-$fileVersion-src
+# doWork alljoyn-notification-$fileVersion-src
+# doWork alljoyn-lsf-$fileVersion-src
+# doWork alljoyn-onboarding-$fileVersion-src
+# doWork alljoyn-sample_apps-$fileVersion-src
+# doWork alljoyn-services_common-$fileVersion-src
+# doWork alljoyn-suite-$fileVersion-src
