@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2014, AllSeen Alliance. All rights reserved.
+# Copyright (c) 2014 - 2015, AllSeen Alliance. All rights reserved.
 #
 #    Permission to use, copy, modify, and/or distribute this software for any
 #    purpose with or without fee is hereby granted, provided that the above
@@ -344,7 +344,7 @@ function doWork() {
             # cd to top, copy subs to srctar
             (
                 cd "gits/$top"
-                find $subs -depth \( -type d -name .git -prune \) -o \( -type f ! -name .gitignore -print \) | cpio -pmdl "$srctarDir"
+                find $subs \( -type d -name .git -prune \) -o \( -type f ! -name .gitignore -print \) | cpio -pmdl "$srctarDir"
             )
             echo "${buildInfoA["$git"]}" >> "$srctarDir/manifest.txt"
             set +x
