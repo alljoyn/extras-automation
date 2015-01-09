@@ -1,4 +1,5 @@
-#!/bin/bash
+# Source this file from bash (v4 or better).
+# Then run the bash functions to create srctars (see end of file)
 
 # Copyright (c) 2014 - 2015, AllSeen Alliance. All rights reserved.
 #
@@ -37,7 +38,7 @@ function mkTheTable() {
 # Note that the first argument to mkTheTable is immediately shifted away, so $1 in the table text actually expands the second argument,
 # $2 expands the third argument, etc.
 # You could build any kind of scheme depending how you coded the table and called the function, but the scheme right now is as follows:
-#   first  arg == the first token in all active lines in this table is either "coreMaster" or "coreR14.06"
+#   first  arg == the first token in all active lines in this table is either gitRB14.06, gitRB14.12, or gitMaster
 #   second arg == $1 : file version embedded in "name" field : the "0.0.1" in filename "alljoyn-0.0.1-src", for example
 #   third  arg == $2 : coded in "c1" field : as described below: "master", for example
 
@@ -52,11 +53,13 @@ function mkTheTable() {
 #   c2    = second checkout to try, if checkout c1 fails : master, for example
 #         = "-" to just fail if checkout c1 fails
 #   top   = starting from root of git workspace, cd "top" before continuing
-#           embedded "=" is replaced by the string from column two
+#           embedded "=" in "top" is replaced by the string from column two
+#           REQUIRED
 #   subs  = starting from "top" (see above), copy "subs"
 #           (think: cd "\$top" ; find \$subs)
+#           (at least one "sub") REQUIRED
 #         = "." means everything except .git .repo
-#           embedded "=" is replaced by the string from column two
+#           embedded "=" in "sub" is replaced by the string from column two
 
 # NOTE: top and sub cannot both be "."
 
@@ -67,212 +70,95 @@ function mkTheTable() {
 
 # release (14.06)
 
-coreR14.06      alljoyn-suite-${1}-src          compliance/tests                ${2}        -   .   =
-coreR14.06      alljoyn-suite-${1}-src          core/ajtcl                      ${2}        -   .   =
-coreR14.06      alljoyn-suite-${1}-src          core/alljoyn                    ${2}        -   .   =
-coreR14.06      alljoyn-suite-${1}-src          devtools/codegen                ${2}        -   .   =
-coreR14.06      alljoyn-suite-${1}-src          lighting/service_framework      ${2}        -   .   =
-coreR14.06      alljoyn-suite-${1}-src          services/base                   ${2}        -   .   =
-coreR14.06      alljoyn-suite-${1}-src          services/base_tcl               ${2}        -   .   =
+gitRB14.06      alljoyn-suite-${1}-src          compliance/tests                ${2}        -   .   =
+gitRB14.06      alljoyn-suite-${1}-src          core/ajtcl                      ${2}        -   .   =
+gitRB14.06      alljoyn-suite-${1}-src          core/alljoyn                    ${2}        -   .   =
+gitRB14.06      alljoyn-suite-${1}-src          devtools/codegen                ${2}        -   .   =
+gitRB14.06      alljoyn-suite-${1}-src          lighting/service_framework      ${2}        -   .   =
+gitRB14.06      alljoyn-suite-${1}-src          services/base                   ${2}        -   .   =
+gitRB14.06      alljoyn-suite-${1}-src          services/base_tcl               ${2}        -   .   =
+
+# release (14.12) in progress (some not in release, or not branched yet as of 2015-01-09)
+
+gitRB14.12      alljoyn-suite-${1}-src          core/ajtcl                      ${2}        -   .   =
+gitRB14.12      alljoyn-suite-${1}-src          core/alljoyn                    ${2}        -   .   =
 
 # master
 
-coreMaster      alljoyn-suite-${1}-src          compliance/tests                ${2}        -   .   =
-coreMaster      alljoyn-suite-${1}-src          core/ajtcl                      ${2}        -   .   =
-coreMaster      alljoyn-suite-${1}-src          core/alljoyn                    ${2}        -   .   =
-coreMaster      alljoyn-suite-${1}-src          core/alljoyn-js                 ${2}        -   .   =
-coreMaster      alljoyn-suite-${1}-src          data/datadriven_api             ${2}        -   .   =
-coreMaster      alljoyn-suite-${1}-src          devtools/codegen                ${2}        -   .   =
-coreMaster      alljoyn-suite-${1}-src          lighting/service_framework      ${2}        -   .   =
-coreMaster      alljoyn-suite-${1}-src          services/base                   ${2}        -   .   =
-coreMaster      alljoyn-suite-${1}-src          services/base_tcl               ${2}        -   .   =
-coreMaster      alljoyn-suite-${1}-src          services/notification_viewer    ${2}        -   .   =
-
-# release (14.12) in progress, 2014-11-24
-
-coreR14.12      alljoyn-suite-${1}-src          core/ajtcl                      ${2}        -   .   =
-coreR14.12      alljoyn-suite-${1}-src          core/alljoyn                    ${2}        -   .   =
+gitMaster       alljoyn-suite-${1}-src          compliance/tests                ${2}        -   .   =
+gitMaster       alljoyn-suite-${1}-src          core/ajtcl                      ${2}        -   .   =
+gitMaster       alljoyn-suite-${1}-src          core/alljoyn                    ${2}        -   .   =
+gitMaster       alljoyn-suite-${1}-src          core/alljoyn-js                 ${2}        -   .   =
+gitMaster       alljoyn-suite-${1}-src          data/datadriven_api             ${2}        -   .   =
+gitMaster       alljoyn-suite-${1}-src          devtools/codegen                ${2}        -   .   =
+gitMaster       alljoyn-suite-${1}-src          lighting/service_framework      ${2}        -   .   =
+gitMaster       alljoyn-suite-${1}-src          services/base                   ${2}        -   .   =
+gitMaster       alljoyn-suite-${1}-src          services/base_tcl               ${2}        -   .   =
+gitMaster       alljoyn-suite-${1}-src          services/notification_viewer    ${2}        -   .   =
 
         # ajtcl, alljoyn, lsf srctars
 
 # release (14.06)
 
-coreR14.06      ajtcl-${1}-src                  core/ajtcl                      ${2}        -   =   .
-coreR14.06      ajtcl-services-${1}-src         services/base_tcl               ${2}        -   =   .
-coreR14.06      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
-coreR14.06      alljoyn-lsf-${1}-src            lighting/service_framework      ${2}        -   =   .
+gitRB14.06      ajtcl-${1}-src                  core/ajtcl                      ${2}        -   =   .
+gitRB14.06      ajtcl-services-${1}-src         services/base_tcl               ${2}        -   =   .
+gitRB14.06      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
+gitRB14.06      alljoyn-lsf-${1}-src            lighting/service_framework      ${2}        -   =   .
+
+# release (14.12) in progress (some not in release, or not branched yet as of 2015-01-09)
+
+gitRB14.12      ajtcl-${1}-src                  core/ajtcl                      ${2}        -   =   .
+gitRB14.12      ajtcl-services-${1}-src         services/base_tcl               ${2}        -   =   .
+gitRB14.12      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
+gitRB14.12      alljoyn-js-${1}-src             core/alljoyn-js                 ${2}        -   =   .
+gitRB14.12      alljoyn-lsf-${1}-src            lighting/service_framework      ${2}        -   =   .
 
 # master
 
-coreMaster      ajtcl-${1}-src                  core/ajtcl                      ${2}        -   =   .
-coreMaster      ajtcl-services-${1}-src         services/base_tcl               ${2}        -   =   .
-coreMaster      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
-coreMaster      alljoyn-js-${1}-src             core/alljoyn-js                 ${2}        -   =   .
-coreMaster      alljoyn-lsf-${1}-src            lighting/service_framework      ${2}        -   =   .
-
-# release (14.12)
-
-coreR14.12      ajtcl-${1}-src                  core/ajtcl                      ${2}        -   =   .
-coreR14.12      ajtcl-services-${1}-src         services/base_tcl               ${2}        -   =   .
-coreR14.12      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
-coreR14.12      alljoyn-js-${1}-src             core/alljoyn-js                 ${2}        -   =   .
-coreR14.12      alljoyn-lsf-${1}-src            lighting/service_framework      ${2}        -   =   .
+gitMaster       ajtcl-${1}-src                  core/ajtcl                      ${2}        -   =   .
+gitMaster       ajtcl-services-${1}-src         services/base_tcl               ${2}        -   =   .
+gitMaster       alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
+gitMaster       alljoyn-js-${1}-src             core/alljoyn-js                 ${2}        -   =   .
+gitMaster       alljoyn-lsf-${1}-src            lighting/service_framework      ${2}        -   =   .
 
         # "services" srctars
 
 # release (14.06)
 
     # first alljoyn/build_core
-coreR14.06      alljoyn-config-${1}-src                 core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-coreR14.06      alljoyn-controlpanel-${1}-src           core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-coreR14.06      alljoyn-notification-${1}-src           core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-coreR14.06      alljoyn-onboarding-${1}-src             core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-coreR14.06      alljoyn-sample_apps-${1}-src            core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-coreR14.06      alljoyn-services_common-${1}-src        core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+gitRB14.06      alljoyn-config-${1}-src                 core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+gitRB14.06      alljoyn-controlpanel-${1}-src           core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+gitRB14.06      alljoyn-notification-${1}-src           core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+gitRB14.06      alljoyn-onboarding-${1}-src             core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+gitRB14.06      alljoyn-sample_apps-${1}-src            core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+gitRB14.06      alljoyn-services_common-${1}-src        core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
     # then the individual service subtree
-coreR14.06      alljoyn-config-${1}-src                 services/base           ${2}        -   .   =/config            =/sample_apps
-coreR14.06      alljoyn-controlpanel-${1}-src           services/base           ${2}        -   .   =/controlpanel      =/sample_apps
-coreR14.06      alljoyn-notification-${1}-src           services/base           ${2}        -   .   =/notification      =/sample_apps
-coreR14.06      alljoyn-onboarding-${1}-src             services/base           ${2}        -   .   =/onboarding        =/sample_apps
-coreR14.06      alljoyn-sample_apps-${1}-src            services/base           ${2}        -   .                       =/sample_apps
-coreR14.06      alljoyn-services_common-${1}-src        services/base           ${2}        -   .   =/services_common   =/sample_apps
+gitRB14.06      alljoyn-config-${1}-src                 services/base           ${2}        -   .   =/config            =/sample_apps
+gitRB14.06      alljoyn-controlpanel-${1}-src           services/base           ${2}        -   .   =/controlpanel      =/sample_apps
+gitRB14.06      alljoyn-notification-${1}-src           services/base           ${2}        -   .   =/notification      =/sample_apps
+gitRB14.06      alljoyn-onboarding-${1}-src             services/base           ${2}        -   .   =/onboarding        =/sample_apps
+gitRB14.06      alljoyn-sample_apps-${1}-src            services/base           ${2}        -   .                       =/sample_apps
+gitRB14.06      alljoyn-services_common-${1}-src        services/base           ${2}        -   .   =/services_common   =/sample_apps
+    # 2015-01-09: individual srctars for "config", "controlpanel" etc are all replaced by one "services" srctar w includes them all
+    # first core/alljoyn (build_core only)
+    # then services/base (everything)
+gitRB14.06      alljoyn-services-${1}-src               core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+gitRB14.06      alljoyn-services-${1}-src               services/base           ${2}        -   .   =
+
+# release (14.12) in progress (services/base not branched yet as of 2015-01-09)
+
+    # first core/alljoyn (build_core only)
+    # then services/base (everything)
+gitRB14.12      alljoyn-services-${1}-src               core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+gitRB14.12      alljoyn-services-${1}-src               services/base           ${2}   master   .   =
 
 # master
 
-    # first alljoyn/build_core
-coreMaster      alljoyn-config-${1}-src                 core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-coreMaster      alljoyn-controlpanel-${1}-src           core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-coreMaster      alljoyn-notification-${1}-src           core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-coreMaster      alljoyn-onboarding-${1}-src             core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-coreMaster      alljoyn-sample_apps-${1}-src            core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-coreMaster      alljoyn-services_common-${1}-src        core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-    # then the individual service subtree
-coreMaster      alljoyn-config-${1}-src                 services/base           ${2}        -   .   =/config            =/sample_apps
-coreMaster      alljoyn-controlpanel-${1}-src           services/base           ${2}        -   .   =/controlpanel      =/sample_apps
-coreMaster      alljoyn-notification-${1}-src           services/base           ${2}        -   .   =/notification      =/sample_apps
-coreMaster      alljoyn-onboarding-${1}-src             services/base           ${2}        -   .   =/onboarding        =/sample_apps
-coreMaster      alljoyn-sample_apps-${1}-src            services/base           ${2}        -   .                       =/sample_apps
-coreMaster      alljoyn-services_common-${1}-src        services/base           ${2}        -   .   =/services_common   =/sample_apps
-
-# release (14.12) in progress, 2014-11-24
-
-    # first alljoyn/build_core
-coreR14.12      alljoyn-config-${1}-src                 core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-coreR14.12      alljoyn-controlpanel-${1}-src           core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-coreR14.12      alljoyn-notification-${1}-src           core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-coreR14.12      alljoyn-onboarding-${1}-src             core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-coreR14.12      alljoyn-sample_apps-${1}-src            core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-coreR14.12      alljoyn-services_common-${1}-src        core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-    # then the individual service subtree
-coreR14.12      alljoyn-config-${1}-src                 services/base           ${2}   master   .   =/config            =/sample_apps
-coreR14.12      alljoyn-controlpanel-${1}-src           services/base           ${2}   master   .   =/controlpanel      =/sample_apps
-coreR14.12      alljoyn-notification-${1}-src           services/base           ${2}   master   .   =/notification      =/sample_apps
-coreR14.12      alljoyn-onboarding-${1}-src             services/base           ${2}   master   .   =/onboarding        =/sample_apps
-coreR14.12      alljoyn-sample_apps-${1}-src            services/base           ${2}   master   .                       =/sample_apps
-coreR14.12      alljoyn-services_common-${1}-src        services/base           ${2}   master   .   =/services_common   =/sample_apps
+    # first core/alljoyn (build_core only)
+    # then services/base (everything)
+gitMaster       alljoyn-services-${1}-src               core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+gitMaster       alljoyn-services-${1}-src               services/base           ${2}        -   .   =
 theTable
-}
-
-function mkBuildInfo() {
-
-    cat <<\buildInfo > $buildInfo.py
-import re
-import sys
-from subprocess import *
-
-def GetBuildInfo(env, source, stderr=PIPE ):
-    branches = []
-    tags = []
-    remotes = []
-    if env.has_key('GIT'):
-        try:
-            remotes = Popen([env['GIT'], 'remote', '-v'], stdout = PIPE, stderr = stderr, cwd = source).communicate()[0].splitlines()
-            branches = Popen([env['GIT'], 'branch'], stdout = PIPE, stderr = stderr, cwd = source).communicate()[0].splitlines()
-            tags = Popen([env['GIT'], 'describe', '--always', '--long', '--abbrev=40'], stdout = PIPE, stderr = stderr, cwd = source).communicate()[0].splitlines()
-        except WindowsError as e:
-            if e[0] == 2:
-                try:
-                    project = Popen([env['GIT'], 'remote', '-v'], stdout = PIPE, stderr = stderr, cwd = source).communicate()[0].splitlines()
-                    branches = Popen([env['GIT'] + '.cmd', 'branch'], stdout = PIPE, stderr = stderr, cwd = source).communicate()[0].splitlines()
-                    tags = Popen([env['GIT'] + '.cmd', 'describe', '--always', '--long', '--abbrev=40'], stdout = PIPE, stderr = stderr, cwd = source).communicate()[0].splitlines()
-                except:
-                    pass
-        except:
-            pass
-
-    branch = None
-    for b in branches:
-        if b[0] == '*':
-            branch = b[2:]
-            break
-
-    tag = None
-    commit_delta = None
-    commit_hash = None
-    gitname = 'Git'
-
-    if remotes:
-        for l in remotes:
-            m = re.search( r'^origin\s(?P<url>.*)\s\(fetch\)$', l )
-            if m:
-                n = re.search( r'^.*/(?P<gitname>.+)$', m.group('url').strip() )
-                if n:
-                    gitname = 'Git: %s' % ( n.group('gitname').strip() )
-                    break
-
-    if tags:
-        if tags[0].find('-') >= 0:
-            tag, commit_delta, commit_hash = tuple(tags[0].rsplit('-',2))
-            commit_hash = commit_hash[1:]  # lop off the "g"
-        else:
-            tag = '<none>'
-            commit_delta = 0;
-            commit_hash = tags[0]
-
-    if branch or commit_hash:
-        bld_string = gitname
-    else:
-        bld_string = ''
-    if branch:
-        bld_string += " branch: '%s'" % branch
-    if commit_hash:
-        bld_string += " tag: '%s'" % tag
-        if commit_delta:
-            bld_string += ' (+%s changes)' % commit_delta
-        if commit_delta or tag == '<none>':
-            bld_string += ' commit ref: %s' % commit_hash
-
-    return bld_string
-
-# "main" calls GetBuildInfo() and prints bld_string on stdout
-# "main" takes one argument: path to git workspace (optional)
-# "git" executable is expected to be found in PATH
-
-def main( argv=None ):
-    env = dict()
-    env['GIT'] = 'git'
-    source = ''
-    if argv and argv[0]:
-        source = argv[0].strip()
-    if source == '':
-        source = '.'
-
-    bld_string = GetBuildInfo( env, source, stderr=None )
-
-    if bld_string and bld_string != '':
-        print '%s' % ( bld_string )
-        return 0
-    else:
-        sys.stderr.write( 'error, unable to get Git version info\n' )
-        sys.stderr.flush()
-        return 1
-
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        sys.exit(main(sys.argv[1:]))
-    else:
-        sys.exit(main())
-buildInfo
 }
 
 function doWork() {
@@ -374,75 +260,76 @@ function fxit {
     exit "$xit"
 }
 
-# script starts here
-
 tell=/tmp/$$.tell
 theTable=/tmp/$$.theTable
 buildInfo=/tmp/$$.buildInfo
 
+declare -A gitRevA buildInfoA tellA
+
 rm          -rf $tell $theTable $buildInfo.py $buildInfo.pyc
 trap    "rm -rf $tell $theTable $buildInfo.py $buildInfo.pyc" 0 1 2 3 15
 
-mkBuildInfo
 
-rm -rf gits depot
-mkdir gits depot
+# ignore everything from here down
 
-declare -A gitRevA buildInfoA tellA
+if false; then
 
-export url=https://git.allseenalliance.org/gerrit
+    #   after sourcing this file, use as follows (example)
 
+    cp genversion.py $buildInfo.py
 
-fileVersion=0.0.1
+    rm -rf gits depot
+    mkdir gits depot
 
-mkTheTable  coreMaster  $fileVersion    master
-
-# activate this block if jenkins triggers builds on master branch
-# doWork ajtcl-$fileVersion-src
-# doWork ajtcl-services-$fileVersion-src
-# doWork alljoyn-$fileVersion-src
-# doWork alljoyn-config-$fileVersion-src
-# doWork alljoyn-controlpanel-$fileVersion-src
-# doWork alljoyn-js-$fileVersion-src
-# doWork alljoyn-lsf-$fileVersion-src
-# doWork alljoyn-notification-$fileVersion-src
-# doWork alljoyn-onboarding-$fileVersion-src
-# doWork alljoyn-sample_apps-$fileVersion-src
-# doWork alljoyn-services_common-$fileVersion-src
-# doWork alljoyn-suite-$fileVersion-src
+    export url=https://git.allseenalliance.org/gerrit
 
 
-fileVersion=0.0.1406
 
-mkTheTable  coreR14.06  $fileVersion    RB14.06
+    fileVersion=0.0.1406
 
-# activate this block if jenkins triggers builds on branch RB14.06
-# doWork ajtcl-$fileVersion-src
-# doWork ajtcl-services-$fileVersion-src
-# doWork alljoyn-$fileVersion-src
-# doWork alljoyn-config-$fileVersion-src
-# doWork alljoyn-controlpanel-$fileVersion-src
-# doWork alljoyn-lsf-$fileVersion-src
-# doWork alljoyn-notification-$fileVersion-src
-# doWork alljoyn-onboarding-$fileVersion-src
-# doWork alljoyn-sample_apps-$fileVersion-src
-# doWork alljoyn-services_common-$fileVersion-src
-# doWork alljoyn-suite-$fileVersion-src
+    mkTheTable  gitRB14.06  $fileVersion    RB14.06
+
+    # activate this block if jenkins triggers builds on branch RB14.06
+    # doWork ajtcl-$fileVersion-src
+    # doWork ajtcl-services-$fileVersion-src
+    # doWork alljoyn-$fileVersion-src
+    # doWork alljoyn-config-$fileVersion-src
+    # doWork alljoyn-controlpanel-$fileVersion-src
+    # doWork alljoyn-lsf-$fileVersion-src
+    # doWork alljoyn-notification-$fileVersion-src
+    # doWork alljoyn-onboarding-$fileVersion-src
+    # doWork alljoyn-sample_apps-$fileVersion-src
+    # doWork alljoyn-services_common-$fileVersion-src
+    # doWork alljoyn-suite-$fileVersion-src
+        # 2015-01-09: individual srctars for "config", "controlpanel" etc are all replaced by one "services" srctar w includes them all
+    # doWork alljoyn-services-$fileVersion-src
 
 
-fileVersion=0.0.1412
 
-mkTheTable  coreR14.12  $fileVersion    RB14.12
+    fileVersion=0.0.1412
 
-# activate this block if jenkins triggers builds on branch RB14.12
-# doWork ajtcl-$fileVersion-src
-# doWork ajtcl-services-$fileVersion-src
-# doWork alljoyn-$fileVersion-src
-# doWork alljoyn-config-$fileVersion-src
-# doWork alljoyn-controlpanel-$fileVersion-src
-# doWork alljoyn-notification-$fileVersion-src
-# doWork alljoyn-lsf-$fileVersion-src
-# doWork alljoyn-onboarding-$fileVersion-src
-# doWork alljoyn-sample_apps-$fileVersion-src
-# doWork alljoyn-services_common-$fileVersion-src
-# doWork alljoyn-suite-$fileVersion-src
+    mkTheTable  gitRB14.12  $fileVersion    RB14.12
+
+    # activate this block if jenkins triggers builds on branch RB14.12
+    # doWork ajtcl-$fileVersion-src
+    # # not yet # doWork ajtcl-services-$fileVersion-src
+    # doWork alljoyn-$fileVersion-src
+    # # not yet # doWork alljoyn-lsf-$fileVersion-src
+    # # not yet # doWork alljoyn-services-$fileVersion-src
+    # doWork alljoyn-suite-$fileVersion-src
+
+
+
+    fileVersion=0.0.1
+
+    mkTheTable  gitMaster   $fileVersion    master
+
+    # activate this block if jenkins triggers builds on master branch
+    # doWork ajtcl-$fileVersion-src
+    # doWork ajtcl-services-$fileVersion-src
+    # doWork alljoyn-$fileVersion-src
+    # doWork alljoyn-js-$fileVersion-src
+    # doWork alljoyn-lsf-$fileVersion-src
+    # doWork alljoyn-services-$fileVersion-src
+    # doWork alljoyn-suite-$fileVersion-src
+fi
