@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="scanset" default="scanset" >
+    <description>selects src files wanted for next source scan using Ant fileset features</description>
+
+    <target name="init">
+        <fail message="missing -Dbasedir=$CI_SCRATCH/src on commandline?" status="1" >
+            <condition>
+                <available file="${basedir}/scanset.xml" type="file" />
+            </condition>
+        </fail>
+        <fail message="missing scanset.* properties on commandline" status="1" >
+            <condition>
+                <not>
+                    <and>
+                        <isset property="scanset.includesFile" />
+                        <isset property="scanset.excludesFile" />
+                        <isset property="scanset.skipped" />
+                    </and>
+                </not>
+            </condition>
+        </fail>
+        <fail message="missing file -Dscanset.includesFile=${scanset.includesFile}" status="1" >
+            <condition>
+                <not>
+                    <available file="${scanset.includesFile}" type="file" />
+                </not>
+            </condition>
+        </fail>
+        <fail message="missing file -Dscanset.excludesFile=${scanset.excludesFile}" status="1" >
+            <condition>
+                <not>
+                    <available file="${scanset.excludesFile}" type="file" />
+                </not>
+            </condition>
+        </fail>
+    </target>
+
+    <target name="scanset" depends="init" description="rm src files not wanted for source scan" >
+
+        <echo>remove all source files EXCEPT files selected by include patterns</echo>
+        <delete verbose="no" >
+            <fileset dir="${basedir}" followsymlinks="no" defaultexcludes="no" casesensitive="no" includes="**/.gitignore **/.git/ **/.repo/" />
+            <fileset dir="${basedir}" followsymlinks="no" defaultexcludes="no" casesensitive="no" >
+                <include name="**/" />
+                <excludesfile name="${scanset.includesFile}" />
+            </fileset>
+        </delete>
+
+        <!-- generate list of source files selected by excludesFile, ie whitelisted -->
+        <fileset dir="${basedir}" id="excluded" followsymlinks="no" defaultexcludes="no" casesensitive="no" includesfile="${scanset.excludesFile}" />
+        <pathconvert property="excluded.list" refid="excluded" pathsep="${line.separator}" >
+            <map from="${basedir}/" to="" />
+        </pathconvert>
+        <delete file="${scanset.skipped}" />
+        <echo file="${scanset.skipped}" force="true" >${excluded.list}${line.separator}</echo>
+        <echo>remove all source files selected by exclude patterns- ie, whitelisted</echo>
+        <delete verbose="yes" >
+            <fileset refid="excluded" />
+        </delete>
+    </target>
+</project>

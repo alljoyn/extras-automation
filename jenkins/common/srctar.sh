@@ -1,7 +1,5 @@
-# Source this file from bash (v4 or better).
-# Then run the bash functions to create srctars (see end of file)
 
-# Copyright (c) 2014 - 2015, AllSeen Alliance. All rights reserved.
+# Copyright AllSeen Alliance. All rights reserved.
 #
 #    Permission to use, copy, modify, and/or distribute this software for any
 #    purpose with or without fee is hereby granted, provided that the above
@@ -14,7 +12,9 @@
 #    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 #    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-#
+
+# Source this file from bash (v4 or better).
+# Then run the bash functions to create srctars (see end of file)
 
 set -e
 
@@ -67,6 +67,7 @@ function mkTheTable() {
 #               ========================        ==============================  ==========  ==  ==  =================================
 
         # combo srctar : master includes everything, but release only includes what is released
+        # NOTE: this was abandoned after 14.06
 
 # release (14.06)
 
@@ -78,24 +79,6 @@ gitRB14.06      alljoyn-suite-${1}-src          lighting/service_framework      
 gitRB14.06      alljoyn-suite-${1}-src          services/base                   ${2}        -   .   =
 gitRB14.06      alljoyn-suite-${1}-src          services/base_tcl               ${2}        -   .   =
 
-# release (14.12) in progress (some not in release, or not branched yet as of 2015-01-09)
-
-gitRB14.12      alljoyn-suite-${1}-src          core/ajtcl                      ${2}        -   .   =
-gitRB14.12      alljoyn-suite-${1}-src          core/alljoyn                    ${2}        -   .   =
-
-# master
-
-gitMaster       alljoyn-suite-${1}-src          compliance/tests                ${2}        -   .   =
-gitMaster       alljoyn-suite-${1}-src          core/ajtcl                      ${2}        -   .   =
-gitMaster       alljoyn-suite-${1}-src          core/alljoyn                    ${2}        -   .   =
-gitMaster       alljoyn-suite-${1}-src          core/alljoyn-js                 ${2}        -   .   =
-gitMaster       alljoyn-suite-${1}-src          data/datadriven_api             ${2}        -   .   =
-gitMaster       alljoyn-suite-${1}-src          devtools/codegen                ${2}        -   .   =
-gitMaster       alljoyn-suite-${1}-src          lighting/service_framework      ${2}        -   .   =
-gitMaster       alljoyn-suite-${1}-src          services/base                   ${2}        -   .   =
-gitMaster       alljoyn-suite-${1}-src          services/base_tcl               ${2}        -   .   =
-gitMaster       alljoyn-suite-${1}-src          services/notification_viewer    ${2}        -   .   =
-
         # ajtcl, alljoyn, lsf srctars
 
 # release (14.06)
@@ -105,13 +88,17 @@ gitRB14.06      ajtcl-services-${1}-src         services/base_tcl               
 gitRB14.06      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
 gitRB14.06      alljoyn-lsf-${1}-src            lighting/service_framework      ${2}        -   =   .
 
-# release (14.12) in progress (some not in release, or not branched yet as of 2015-01-09)
+# release (14.12)
 
 gitRB14.12      ajtcl-${1}-src                  core/ajtcl                      ${2}        -   =   .
 gitRB14.12      ajtcl-services-${1}-src         services/base_tcl               ${2}        -   =   .
 gitRB14.12      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
 gitRB14.12      alljoyn-js-${1}-src             core/alljoyn-js                 ${2}        -   =   .
 gitRB14.12      alljoyn-lsf-${1}-src            lighting/service_framework      ${2}        -   =   .
+
+# release (14.12a) - only alljoyn, not ajtcl
+
+gitv14.12a      alljoyn-${1}-src                core/alljoyn                    v14.12a      -   =   .
 
 # master
 
@@ -145,12 +132,12 @@ gitRB14.06      alljoyn-services_common-${1}-src        services/base           
 gitRB14.06      alljoyn-services-${1}-src               core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
 gitRB14.06      alljoyn-services-${1}-src               services/base           ${2}        -   .   =
 
-# release (14.12) in progress (services/base not branched yet as of 2015-01-09)
+# release (14.12)
 
     # first core/alljoyn (build_core only)
     # then services/base (everything)
 gitRB14.12      alljoyn-services-${1}-src               core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-gitRB14.12      alljoyn-services-${1}-src               services/base           ${2}   master   .   =
+gitRB14.12      alljoyn-services-${1}-src               services/base           ${2}        -   .   =
 
 # master
 
@@ -180,7 +167,7 @@ function doWork() {
         mkdir  "$srctarDir"
 
         set +x
-        while read name git c1 c2 top subs
+        while read -r name git c1 c2 top subs
         do
             case "$debug" in ( -* ) echo >&2 "table: $name $git $c1 $c2 $top $subs" ;; esac
             # get next line from table
@@ -312,11 +299,10 @@ if false; then
 
     # activate this block if jenkins triggers builds on branch RB14.12
     # doWork ajtcl-$fileVersion-src
-    # # not yet # doWork ajtcl-services-$fileVersion-src
+    # doWork ajtcl-services-$fileVersion-src
     # doWork alljoyn-$fileVersion-src
     # # not yet # doWork alljoyn-lsf-$fileVersion-src
-    # # not yet # doWork alljoyn-services-$fileVersion-src
-    # doWork alljoyn-suite-$fileVersion-src
+    # doWork alljoyn-services-$fileVersion-src
 
 
 
@@ -331,5 +317,4 @@ if false; then
     # doWork alljoyn-js-$fileVersion-src
     # doWork alljoyn-lsf-$fileVersion-src
     # doWork alljoyn-services-$fileVersion-src
-    # doWork alljoyn-suite-$fileVersion-src
 fi
