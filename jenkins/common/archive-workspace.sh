@@ -25,6 +25,7 @@ echo >&2 + : START preamble
 source "${CI_NODESCRIPTS_PART}.sh"
 
 echo >&2 + : STATUS preamble ok
+date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
 set -x
 :
 : START archive-workspace
@@ -58,5 +59,6 @@ case "${BUILD_TAG}" in
 esac
 
 set +x
+date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
 echo >&2 + : STATUS $ci_job exit $ci_job_xit
 exit "$ci_job_xit"

@@ -30,6 +30,45 @@ case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) ci_showfs ;; esac
 echo >&2 + : STATUS preamble ok
 set -x
 
+case "$( uname )" in
+( Linux )
+    _uncrustify=$( uncrustify --version ) || : ok
+    case "$_uncrustify" in
+    ( uncrustify* )
+        case "${GERRIT_BRANCH}/$_uncrustify" in
+        ( RB14.12/uncrustify\ 0.61* )
+            _ws=off
+            :
+            : WARNING $ci_job, found "$_uncrustify", have alljoyn branch="${GERRIT_BRANCH}" : skipping Whitespace scan
+            :
+            ;;
+        ( RB14.12/uncrustify\ 0.57* )
+            _ws=detail
+            ;;
+        ( */uncrustify\ 0.61* )
+            _ws=detail
+            ;;
+        ( * )
+            _ws=off
+            :
+            : WARNING $ci_job, found "$_uncrustify", have alljoyn branch="${GERRIT_BRANCH}" : skipping Whitespace scan
+            :
+            ;;
+        esac
+        ;;
+    ( * )
+        _ws=off
+        :
+        : WARNING $ci_job, uncrustify not found: skipping Whitespace scan
+        :
+        ;;
+    esac
+    ;;
+( * )
+    _ws=off
+    ;;
+esac
+
 :
 :
 cd "${WORKSPACE}"
@@ -49,7 +88,7 @@ rm -f "${CI_SCRATCH}/ajtcl.tar"
 tar -cf "${CI_SCRATCH}/ajtcl.tar" alljoyn/core/ajtcl
 
 pushd alljoyn/core/ajtcl
-    ci_scons WS=off VARIANT=release GTEST_DIR="$( ci_natpath "$GTEST_DIR" )" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+    ci_scons WS=$_ws VARIANT=release GTEST_DIR="$( ci_natpath "$GTEST_DIR" )" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
     ci_showfs
 
     :

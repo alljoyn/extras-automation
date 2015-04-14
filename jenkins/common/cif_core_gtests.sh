@@ -13,50 +13,51 @@
 #    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-# function runs Google tests for AllJoyn Core on any platform
-#   cwd     : top of AJ Core SCons build tree (ie core/alljoyn)
+# function runs Google tests for AllJoyn Core on any platform except Android device or emulator
+#   cwd     : top of AJ Core SCons build tree (ie, just above build/$os/$cpu/$variant/...)
 #   argv1,2,3 : OS,CPU,VARIANT : as in build/$OS/$CPU/$VARIANT/dist path, as in AJ Core SCons options OS,CPU,VARIANT
 #   argv4   : BR=[on, off] : "bundled router" -or- "router daemon" (alljoyn-daemon), as in AJ Core SCons option BR
 #   argv5   : BINDINGS : cpp,c,etc, as in AJ Core SCons option BINDINGS
 #   return  : 0 -or- non-zero : pass -or- fail
 
+case "$cif_core_gtests_xet" in
+( "" )
+    # cif_xet is undefined, so process this file
+    export cif_core_gtests_xet=cif_xet
+
 echo >&2 + : BEGIN cif_core_gtests.sh
 
+source "${CI_COMMON}/cif_scons_vartags.sh"
+
 ci_core_gtests() {
+
+    case "${CIAJ_GTEST}" in
+    ( [NnFf]* )
+        :
+        : WARNING ci_core_gtests, skipping gtests because CIAJ_GTEST="${CIAJ_GTEST}"
+        :
+        return 0
+        ;;
+    esac
+
+    local xet="$-"
+    local xit=0
 
     :
     : ci_core_gtests "$@"
     :
+    date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
 
-    local _xet="$-"
-    local _xit=0
+    local _os="$1"
+    local _cpu="$2"
+    local _variant="$3"
+    local _br="$4"
+    local _bindings="$5"
 
-    local os="$1"
-    local cpu="$2"
-    local variant="$3"
-    local br="$4"
-    local bindings="$5"
+    local vartag cputag dist test obj
+    eval $( ci_scons_vartags "$@" )
 
-    local vartag cputag dist test
-
-    case "$os" in ( linux | darwin | win7 ) ;; ( * ) ci_exit 2 ci_core_gtests, OS="$os" ;; esac
-    case "$variant" in
-    ( debug )   vartag=dbg ;;
-    ( release ) vartag=rel ;;
-    ( * )       ci_exit 2 ci_core_gtests, VARIANT="$variant" ;;
-    esac
-
-    case "$cpu" in
-    ( *64 )     cputag=x64 ;;
-    ( *86 )     cputag=x86 ;;
-    ( arm* )    cputag=$cpu ;;
-    ( * )       ci_exit 2 ci_core_gtests, CPU="$cpu" ;;
-    esac
-
-    dist=$PWD/build/$os/$cpu/$variant/dist
-    test=$PWD/build/$os/$cpu/$variant/test
-
-    local gtest gtestbin is_required ready_daemon start_daemon _x
+    local gtest gtest_bin is_required ready_daemon start_daemon ready_address _bus_address daemon_bin daemon_options daemon_pid daemon_exe
 
         # fake HOME and TMPDIR should have been done by now, in ci_setenv preamble. better safe than sorry.
 
@@ -80,51 +81,134 @@ ci_core_gtests() {
     fi
     mkdir "${WORKSPACE}/home" "${WORKSPACE}/tmp" || : ok
 
-    case "$os" in
+        : generate top part of gtest.conf file
+
+    rm -f "${CI_SCRATCH}/gtest.conf"
+    cat <<\EoF > "${CI_SCRATCH}/gtest.conf"
+[Environment]
+    # variable=value
+
+    ER_DEBUG_ALL=0
+
+    # GTest supports the following options, shown with their default value
+    # GTEST_OUTPUT=     # None
+    # GTEST_ALSO_RUN_DISABLED_TESTS=0   # No
+    # GTEST_REPEAT=0    # No
+    # GTEST_SHUFFLE=0   # No
+    # GTEST_RANDOM_SEED=0       # default pseudo-random seed
+    # GTEST_BREAK_ON_FAILURE=0  # no break on failures
+    # GTEST_CATCH_EXCEPTIONS=1  # gtest catches exceptions itself
+
+EoF
+
+    mkdir -p "${CI_ARTIFACTS}/$vartag" 2> /dev/null || : ok
+    rm -f    "${CI_ARTIFACTS}/$vartag/gtest.alljoyn-daemon.conf"
+
+    daemon_bin=$dist/cpp/bin
+    daemon_options=
+    daemon_exe=
+
+        : platform=$_os specific
+
+    case "$_os" in
     ( linux )
         export LD_LIBRARY_PATH=$dist/cpp/lib:$dist/c/lib
-        case "$br" in ( [Oo][Ff][Ff] ) ready_daemon=-s ;; ( * ) ready_daemon=-S ;; esac
+        case "$_br" in
+        ( [Oo][Ff][Ff] )
+            ready_daemon=T
+            ready_address=unix:abstract=alljoyn ### FIXME $( uuidgen )
+            daemon_options="--config-file=gtest.alljoyn-daemon.conf --no-udp --no-slap --nofork --print-address --verbosity=5"
+            daemon_exe=alljoyn-daemon
+
+            cat <<EoF > "${CI_ARTIFACTS}/$vartag/gtest.alljoyn-daemon.conf"
+<?xml version= "1.0"?>
+<busconfig>
+  <type>alljoyn</type>
+  <!--
+    Only listen on a local socket. (abstract=/path/to/socket
+    means use abstract namespace, don't really create filesystem
+    file; only Linux supports this. Use path=/whatever on other
+    systems.)
+    -->
+  <listen>$ready_address</listen>
+  <listen>tcp:addr=0.0.0.0,port=9955</listen>
+  <limit name="auth_timeout">32768</limit>
+  <limit name="max_incomplete_connections">16</limit>
+  <limit name="max_completed_connections">32</limit>
+  <limit name="max_remote_clients_tcp">0</limit>"
+  <flag name="restrict_untrusted_clients">false</flag>
+  <!--
+    Allow everything, D-Bus socket is protected by unix filesystem permissions
+    -->
+  <policy context="default">
+    <allow send_interface="*"/>
+    <allow receive_interface="*"/>
+    <allow own="*"/>
+    <allow user="*"/>
+  </policy>
+</busconfig>
+EoF
+            ;;
+        ( * )
+            ready_daemon=F
+            ready_address=null:
+            ;;
+        esac
         ;;
     ( darwin )
+        case "$_br" in ( [Oo][Ff][Ff] ) ci_exit 2 ci_core_gtests, BR=off not supported for "$_os" ;; esac
         export LD_LIBRARY_PATH=$dist/cpp/lib
-        ready_daemon=-S
+        ready_daemon=F
+        ready_address=null:
         ;;
     ( win7 )
-        ready_daemon=-S
+        case "$_br" in ( [Oo][Ff][Ff] ) ci_exit 2 ci_core_gtests, BR=off not supported for "$_os" ;; esac
+        ready_daemon=F
+        ready_address=null:
         ;;
     ( * )
-        : START $gtest $vartag
-        ci_exit 2 ci_core_gtests, no Google Test yet for $os
+        : START gtest $vartag
+        ci_exit 2 ci_core_gtests, no Google Tests for $_os
         ;;
     esac
 
     ci_savenv
 
+
+        : run all applicable gtests
+
+
     for gtest in ajtest cmtest ajctest abouttest
     do
+        mkdir -p "${CI_ARTIFACTS}/$vartag" 2> /dev/null || : ok
+        rm -f    "${CI_ARTIFACTS}/$vartag/$gtest"*
+
         start_daemon=$ready_daemon
+
+            : gtest=$gtest specific
+
         case $gtest in
         ( ajtest )
-            gtestbin=$test/cpp/bin
+            gtest_bin=$test/cpp/bin
             is_required=required
             ;;
         ( cmtest )
-            gtestbin=$test/cpp/bin
+            gtest_bin=$test/cpp/bin
             is_required=required
-            start_daemon=-S
+            start_daemon=F
             ;;
         ( ajctest )
-            case "$bindings" in ( [Cc],* | *,[Cc] | *,[Cc],* | [Cc] ) is_required=required ;; ( * ) is_required=excused ;; esac
-            case "$os" in ( darwin ) is_required=excused ;; esac
-            gtestbin=$test/c/bin
+            case "$_bindings" in ( [Cc],* | *,[Cc] | *,[Cc],* | [Cc] ) is_required=required ;; ( * ) is_required=excused ;; esac
+            case "$_os" in ( darwin ) is_required=excused ;; esac
+            gtest_bin=$test/c/bin
             ;;
         ( abouttest )
-            gtestbin=$test/cpp/bin
+            gtest_bin=$test/cpp/bin
             is_required=optional
             ;;
         esac
 
-        if test -f "$gtestbin/$gtest" -o -f "$gtestbin/$gtest.exe"
+        if test -f "$gtest_bin/$gtest" -o -f "$gtest_bin/$gtest.exe"
         then
             : OK $gtest exe
         else
@@ -149,47 +233,115 @@ ci_core_gtests() {
             esac
         fi
 
-        if test -f "$gtestbin/test_report/$gtest-buildbot.conf"
-        then
-            : OK $gtest-buildbot.conf
-        else
-            : START $gtest $vartag
-            ci_exit 2 ci_core_gtests, $gtest-buildbot config file not found
-        fi
+            : clean fake home and tmp directories before each gtest
 
         rm -rf "${WORKSPACE}/home"/* "${WORKSPACE}/tmp"/* || : ok
             # because rm -rf $HOME/* just feels too dangerous
 
-        case "${CI_VERBOSE}" in ( [NnFf]* ) _x=+x ;; ( * ) _x=-x ;; esac
+        pushd "$gtest_bin"
 
-        :
-        : START $gtest $vartag
-        :
-        pushd "$gtestbin/test_report"
-            rm -f runall.sh.t
-            sed -e 's,\r$,,' < runall.sh > runall.sh.t
+            : run $gtest from $PWD
 
-            : runall.sh $gtest
-            bash $_x runall.sh.t $start_daemon -t "$test" -c '*-buildbot.conf' -- $gtest || {
-                _xit=$?
-                :
-                : FAILURE $gtest exit=$_xit
-                :
-            }
-            :
-            : INFO $gtest log
-            :
-            cat $gtest.log
-            cp $gtest-buildbot.conf* "${CI_ARTIFACTS}" || : ok
-            cp alljoyn-daemon.log "${CI_ARTIFACTS}/$gtest.alljoyn-daemon.log" || : ok
-            cp $gtest.xml "${CI_ARTIFACTS}" || _xit=$?
-            cp $gtest.log "${CI_ARTIFACTS}"
+            rm -f $gtest.conf $gtest.log
+
+            case "$start_daemon" in
+            ( F | "" )
+                    : no alljoyn-daemon
+
+                _bus_address=null:
+                ;;
+            ( T )
+                    : use alljoyn-daemon
+
+                _bus_address=$ready_address
+
+                pushd "$daemon_bin"
+                    rm -f $gtest.alljoyn-daemon.log gtest.alljoyn-daemon.conf
+
+                    killall -9 -v alljoyn-daemon || { sleep 2 ; killall -9 -v alljoyn-daemon ; } || : ok
+
+                    ls -l ./$daemon_exe && ./$daemon_exe --version || {
+                        : START alljoyn-daemon $vartag
+                        ci_exit 2 ci_core_gtests, alljoyn-daemon executable not found
+                    }
+
+                    cp "${CI_ARTIFACTS}/$vartag/gtest.alljoyn-daemon.conf" .
+
+                    :
+                    : run alljoyn-daemon in background from $PWD
+                    :
+
+                    date > $gtest.alljoyn-daemon.log 2>&1
+                    ./$daemon_exe $daemon_options >> $gtest.alljoyn-daemon.log 2>&1 < /dev/null &
+
+                    : save alljoyn-daemon pid
+
+                    daemon_pid=$!
+                popd
+                ;;
+            esac
+
+                : complete the generated gtest.conf file
+
+            cat <<EoF > "${CI_ARTIFACTS}/$vartag/$gtest.conf" "${CI_SCRATCH}/gtest.conf" -
+[Environment]
+    GTEST_OUTPUT=xml:$gtest.xml
+
+    BUS_ADDRESS =$_bus_address
+    BUS_ADDRESS1=$_bus_address
+    BUS_ADDRESS2=$_bus_address
+    BUS_ADDRESS3=$_bus_address
+
+[TestCases]
+    # Can select individual tests as well as groups.
+    # That is, TestCase selection can look like Foo.Bar=YES, not just Foo=YES.
+    # You can also used negative selection, like *=YES followed by Foo.Bar=NO.
+
+    *=Yes
+    ## FIXME ## ObserverTest.*=No
+
+EoF
+            cp "${CI_ARTIFACTS}/$vartag/$gtest.conf" $gtest.conf
+
+                # run the $gtest
+
+            ci_test_harness $gtest $gtest.conf $gtest.log || xit=$?
+
+            cp $gtest.log $gtest.xml "${CI_ARTIFACTS}/$vartag" || : ok
         popd
+
+        case "$start_daemon" in
+        ( T )
+                : end alljoyn-daemon
+
+            pushd "$daemon_bin"
+
+                :
+                : kill alljoyn-daemon
+                :
+                kill $daemon_pid || { sleep 2 ; kill -9 $daemon_pid ; } || : ok
+                sleep 2
+
+                date >> $gtest.alljoyn-daemon.log 2>&1
+                cp $gtest.alljoyn-daemon.log "${CI_ARTIFACTS}/$vartag/$gtest.alljoyn-daemon.log" || : ok
+            popd
+            ;;
+        esac
+
+        case $xit in ( 0 ) ;; ( * ) case "${CI_KEEPGOING}" in ( "" | [NnFf]* ) break ;; esac ;; esac
     done
 
-    case "$_xet" in ( *x* ) set -x ;; ( * ) set +x ;; esac
-    return $_xit
+    date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
+    case "$xet" in ( *x* ) set -x ;; ( * ) set +x ;; esac
+    return $xit
 }
 export -f ci_core_gtests
 
+    # end processing this file
+
 echo >&2 + : END cif_core_gtests.sh
+    ;;
+( * )
+    # ci_xet is already defined, so skip this file
+    ;;
+esac

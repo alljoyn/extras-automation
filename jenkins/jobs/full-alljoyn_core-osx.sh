@@ -27,12 +27,15 @@ source "${CI_NODESCRIPTS_PART}.sh"
 _j=$( expr $NUMBER_OF_PROCESSORS / 2 )
 case "$_j" in ( "" | 0 | 1 ) _j=2 ;; esac
 export SCONSFLAGS="-j $_j"
+# scons keepgoing flag
+case "${CI_KEEPGOING}" in ( "" | [NnFf]* ) ;; ( * ) SCONSFLAGS="-k $SCONSFLAGS" ;; esac
 
 source "${CI_COMMON}/cif_core_xcodebuilds.sh"
-source "${CI_COMMON}/cif_core_gtests.sh"
+source "${CI_COMMON}/cif_scons_vartags.sh"
 
 ci_savenv
-case "${CI_VERBOSE}" in ( [NnFf]* ) verbose="" ;; ( * ) verbose=-verbose; ci_showfs ;; esac
+case "${CI_VERBOSE}" in ( [NnFf]* ) _verbose= ;; ( * ) _verbose=-verbose ; ci_showfs ;; esac
+date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
 echo >&2 + : STATUS preamble ok
 set -x
 
@@ -43,74 +46,64 @@ cd "${WORKSPACE}"
 ci_genversion alljoyn/core/alljoyn ${GERRIT_BRANCH}  >  alljoyn/manifest.txt
 cp alljoyn/manifest.txt artifacts
 
+:
 : INFO manifest
+:
 
 cat alljoyn/manifest.txt
 
-: START job
-
 :
-: xcodebuilds for google tests and iphone simulator on Mac - Debug only
+: xcodebuilds
 :
-pushd alljoyn/core/alljoyn
-    ci_xcodebuild_simulator debug
-popd
-    : save clean workspace
-rm  -f  "${CI_SCRATCH}/xcodebuild-simulator-debug.tar"
-tar -cf "${CI_SCRATCH}/xcodebuild-simulator-debug.tar" alljoyn/core/alljoyn
-
-: google tests
-
-pushd alljoyn/core/alljoyn
-    ci_core_gtests darwin x86 debug || ci_job_xit=$?
-popd
-
-## pushd alljoyn/core/alljoyn/alljoyn_obj/AllJoynFramework_iOS
-## xcodebuild -project AllJoynFramework_iOS.xcodeproj -scheme AllJoynFramework_iOS -sdk iphonesimulator -configuration $configuration test TEST_AFTER_BUILD=YES ## FIXME not with XCode 6
-
-    : restore clean workspace
-rm -rf  alljoyn/core/alljoyn
-tar -xf "${CI_SCRATCH}/xcodebuild-simulator-debug.tar"
-rm  -f  "${CI_SCRATCH}/xcodebuild-simulator-debug.tar"
-
-:
-: xcodebuilds for google tests and iphone simulator on Mac - Release
-:
-pushd alljoyn/core/alljoyn
-    ci_xcodebuild_simulator release
-popd
-    : save clean workspace
-rm  -f  "${CI_SCRATCH}/xcodebuild-simulator-release.tar"
-tar -cf "${CI_SCRATCH}/xcodebuild-simulator-release.tar" alljoyn/core/alljoyn
-
-: google tests
-
-pushd alljoyn/core/alljoyn
-    ci_core_gtests darwin x86 release || ci_job_xit=$?
-popd
-
-    : restore clean workspace
-rm -rf  alljoyn/core/alljoyn
-tar -xf "${CI_SCRATCH}/xcodebuild-simulator-release.tar"
-rm  -f  "${CI_SCRATCH}/xcodebuild-simulator-release.tar"
-
-:
-: all remaining xcodebuilds
-:
-pushd alljoyn/core/alljoyn
-    ci_xcodebuild_arm debug
-    ci_xcodebuild_arm release
-popd
+for _variant in debug release
+do
+    pushd alljoyn/core/alljoyn
+        ci_xcodebuild_simulator $_variant
+        ci_xcodebuild_arm $_variant
+    popd
+done
 
 :
 : START SDK
 :
+date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
 cd "${WORKSPACE}"
-ant -f "${CI_COMMON}/build-mac.xml" $verbose -DsdkWork="${CI_ARTIFACTS_WORK}" -DsconsDir="${WORKSPACE}/alljoyn/core/alljoyn" -DsdkName="${CI_ARTIFACT_NAME}-sdk"
+ant -f "${CI_COMMON}/build-mac.xml" $_verbose -DsdkWork="${CI_ARTIFACTS_WORK}" -DsconsDir="${WORKSPACE}/alljoyn/core/alljoyn" -DsdkName="${CI_ARTIFACT_NAME}-sdk"
 mv -f "${CI_ARTIFACTS_WORK}/${CI_ARTIFACT_NAME}-sdk.zip" "${CI_ARTIFACTS}"
+
+:
+: START dist and test zips
+:
+for _variant in debug release
+do
+    pushd alljoyn/core/alljoyn
+        eval $( ci_scons_vartags darwin x86 $_variant )
+        :
+        : dist.zip $_variant
+        :
+        ci_zip_simple_artifact "$dist" "${CI_ARTIFACT_NAME}-dist-$vartag"
+
+        case "${CIAJ_GTEST}" in
+        ( [NnFf]* )
+            :
+            : WARNING $ci_job, no test zips produced because CIAJ_GTEST="${CIAJ_GTEST}"
+            :
+            popd
+            break
+            ;;
+        ( * )
+            :
+            : test.zip $_variant
+            :
+            ci_zip_simple_artifact "$test" "${CI_ARTIFACT_NAME}-test-$vartag"
+            ;;
+        esac
+    popd
+done
 
 :
 :
 set +x
+date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
 echo >&2 + : STATUS $ci_job exit $ci_job_xit
 exit "$ci_job_xit"

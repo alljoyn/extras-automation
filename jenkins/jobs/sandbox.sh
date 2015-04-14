@@ -13,79 +13,47 @@
 #    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-# Gerrit-verify build for AllJoyn Core (Std) on all platforms except OSX
-
+# "Sandbox" build for prototyping Jenkins builds within the AllJoyn CI framework. 
+# Cloned from vfy-ajtcl-u1404 and stripped-down.
 
 set -e +x
-ci_job=vfy-alljoyn_core.sh
+ci_job=sandbox.sh
 ci_job_xit=0
 echo >&2 + : BEGIN $ci_job
 echo >&2 + : START preamble
 source "${CI_NODESCRIPTS_PART}.sh"
 
-source "${CI_COMMON}/cif_scons_vartags.sh"
-source "${CI_COMMON}/cif_core_sconsbuilds.sh"
-
-case "${CIAJ_OS}" in
-( linux | win7 )
-    source "${CI_COMMON}/cif_core_gtests.sh"
-    source "${CI_COMMON}/cif_core_junits.sh"
-    ;;
-( android )
-    : android unit tests : NOT YET
-    ;;
-esac
-
-ci_savenv
 case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) ci_showfs ;; esac
 echo >&2 + : STATUS preamble ok
-date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
 set -x
 
 :
 :
 cd "${WORKSPACE}"
 
-ci_genversion alljoyn/core/alljoyn ${GERRIT_BRANCH}  >  alljoyn/manifest.txt
+ci_genversion alljoyn/core/ajtcl ${GERRIT_BRANCH}  >  alljoyn/manifest.txt
 cp alljoyn/manifest.txt artifacts
 
-:
 : INFO manifest
-:
 
 cat alljoyn/manifest.txt
 
-: START job
+:
+: START scons ajtcl dbg
+:
 
-pushd alljoyn/core/alljoyn
-    ci_core_sconsbuild "${CIAJ_OS}" "${CIAJ_CPU}" "${CIAJ_VARIANT}" "${CIAJ_BR}" "${CIAJ_BINDINGS}"
+rm -f "${CI_SCRATCH}/ajtcl.tar"
+tar -cf "${CI_SCRATCH}/ajtcl.tar" alljoyn/core/ajtcl
+
+pushd alljoyn/core/ajtcl
+    ci_scons WS=off VARIANT=debug GTEST_DIR="$( ci_natpath "$GTEST_DIR" )" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+    ci_showfs
 popd
 
-case "${CIAJ_OS}" in
-( linux | win7 )
-    :
-    : google tests
-    :
-    pushd alljoyn/core/alljoyn
-        ci_core_gtests "${CIAJ_OS}" "${CIAJ_CPU}" "${CIAJ_VARIANT}" "${CIAJ_BR}" "${CIAJ_BINDINGS}"
-    popd
+cd "${WORKSPACE}"
 
-    :
-    : junit tests
-    :
-    pushd alljoyn/core/alljoyn
-        ci_core_ready_junits "${CIAJ_OS}" "${CIAJ_CPU}" "${CIAJ_VARIANT}"
-        ci_core_junits "${CIAJ_OS}" "${CIAJ_CPU}" "${CIAJ_VARIANT}" "${CIAJ_BR}"
-    popd
-    ;;
-( android )
-    : INFO android unit tests : NOT YET
-    ;;
-esac
+ci_zip_simple_artifact alljoyn "${CI_ARTIFACT_NAME}-dbg"
 
-:
-:
 set +x
-date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
 echo >&2 + : STATUS $ci_job exit $ci_job_xit
 exit "$ci_job_xit"

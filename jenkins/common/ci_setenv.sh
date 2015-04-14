@@ -30,6 +30,8 @@ ci_exit() {
     # general purpose error exit
     set +ex
     local xit
+    date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
+
     case "$1" in ( [0-9] | [1-9][0-9] | [1-9][0-9][0-9] ) xit=$1 ; shift ;; ( * ) xit=2 ;; esac
     case $xit in ( 0 ) ;; ( * ) echo >&2 + : ERROR "$@" ;; esac
 
@@ -144,9 +146,10 @@ export CI_COMMON=${WORKSPACE}/${CI_COMMON_PART}
 export CI_JOBSCRIPTS=${WORKSPACE}/${CI_JOBSCRIPTS_PART}
 export CI_NODESCRIPTS=${WORKSPACE}/${CI_NODESCRIPTS_PART}
 export CI_GENVERSION_PY=${CI_COMMON}/genversion.py
+export CI_TEST_HARNESS_PY=${CI_COMMON}/test_harness.py
 
 ci_ck_fullpath CI_JOBSCRIPTS CI_NODESCRIPTS
-ci_ck_found CI_SRC_AUTOMATION CI_COMMON CI_GENVERSION_PY
+ci_ck_found CI_SRC_AUTOMATION CI_COMMON CI_GENVERSION_PY CI_TEST_HARNESS_PY
 
 export CI_SCRATCH=${WORKSPACE}/scratch
 export CI_ARTIFACTS=${WORKSPACE}/artifacts
@@ -158,14 +161,11 @@ export HOME=${WORKSPACE}/home
 export TMP=${WORKSPACE}/tmp
 export TMPDIR=${WORKSPACE}/tmp
 
-(
-    set +e
-    mkdir -p "$HOME" 2>/dev/null
-    mkdir -p "$TMP" 2>/dev/null
-    mkdir -p "${CI_SCRATCH}" 2>/dev/null
-    mkdir -p "${CI_ARTIFACTS}" 2>/dev/null
-    mkdir -p "${CI_ARTIFACTS_WORK}" 2>/dev/null
-) || : error ignored
+mkdir -p "$HOME" 2>/dev/null    || : error ignored
+mkdir -p "$TMP" 2>/dev/null     || : error ignored
+mkdir -p "${CI_SCRATCH}" 2>/dev/null    || : error ignored
+mkdir -p "${CI_ARTIFACTS}" 2>/dev/null  || : error ignored
+mkdir -p "${CI_ARTIFACTS_WORK}" 2>/dev/null     || : error ignored
 
 # force_home and force_tmp allow the job to fallback to "real" home or tmp, if needed
 # optional, defined in Jenkins Node config
@@ -251,6 +251,7 @@ set CI_ARTIFACTS=$( ci_natpath "${CI_ARTIFACTS}" )
 set CI_ARTIFACTS_WORK=$( ci_natpath "${CI_ARTIFACTS_WORK}" )
 set CI_COMMON=$( ci_natpath "${CI_COMMON}" )
 set CI_GENVERSION_PY=$( ci_natpath "${CI_GENVERSION_PY}" )
+set CI_TEST_HARNESS_PY=$( ci_natpath "${CI_TEST_HARNESS_PY}" )
 set CI_SRC_AUTOMATION=$( ci_natpath "${CI_SRC_AUTOMATION}" )
 set CI_JOBSCRIPTS=$( ci_natpath "${CI_JOBSCRIPTS}" )
 set CI_NODESCRIPTS=$( ci_natpath "${CI_NODESCRIPTS}" )

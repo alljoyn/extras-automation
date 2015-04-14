@@ -109,8 +109,11 @@ export -f ci_ck_found       # ck given path is found
 ci_zip_simple_artifact() {
     local _xet="$-"
     case "${CI_VERBOSE}" in ( [NnFf]* ) set +x ;; ( * ) set -x ;; esac
+    date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
 
-    echo >&2 + : START ci_zip_simple_artifact "$@"
+    :
+    : ci_zip_simple_artifact "$@"
+    :
 
     local from zip work to
 
@@ -133,15 +136,13 @@ ci_zip_simple_artifact() {
 
     work=${CI_ARTIFACTS_WORK}/$zip
     to=${CI_ARTIFACTS}/$zip.zip
-    (
-        set +e
-        rm -rf "$work" "$to"
-        mkdir -p "$work"
-    ) || : error ignored
 
-    set -x
+    rm -rf "$work" "$to"    || : error ignored
+    mkdir -p "$work"        || : error ignored
+
+    set -ex
     : ci_zip_simple_artifact: "copy $@ from=$from to the working tree"
-    pushd "$from"
+    pushd "$from" || return $?
         ci_showfs
         tar -cf - "$@" | ( cd "$work" && tar -xf - )
     popd
@@ -153,6 +154,8 @@ ci_zip_simple_artifact() {
     popd
 
     rm -rf "$work"
+
+    date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
     case "$_xet" in ( *x* ) set -x ;; esac
 }
 export -f ci_zip_simple_artifact    # archives one "simple" build artifact in a standard way
@@ -171,12 +174,40 @@ case "${CI_SHELL_W}" in
         python "${CI_GENVERSION_PY}" "$1" $2
     }
 
+    ci_test_harness() {      # run test_harness.py with parameters
+        # argv1= name of gtest executable file
+        # argv2= test_harness config file
+        # argv3= log file to be written (console output also appears on stdout)
+        # argv4= optional path to directory containing argv1
+        local xit=0
+        local path_to_gtestfile=${4:-.}
+        :
+        : START test_harness "$@"
+        :
+        time python "${CI_TEST_HARNESS_PY}" -c "$2" -t $1 -p "$path_to_gtestfile" < /dev/null | tee "$3"
+        tail -10 "$3" | grep -q "exiting with status 0" || {
+            xit=1
+            :
+            : FAILURE test_harness $1
+            :
+        }
+        return $xit
+    }
+
     ci_slash_1_2() {        # only on Windows
         ci_exit 2 ci_slash_1_2 only on Windows
     }
 
     ci_scons() {            # dummy scons
-        scons "$@"
+        local _xet="$-"
+        case "${CI_VERBOSE}" in ( [NnFf]* ) set +x ;; esac
+        ci_savenv
+
+        local minusk
+        case "${CI_KEEPGOING}" in ( "" | [NnFf]* ) minusk="" ;; ( * ) minusk=-k ;; esac
+
+        case "$_xet" in ( *x* ) set -x ;; esac
+        scons "$@" $minusk
     }
 
     ci_zip() {              # dummy zip
@@ -226,6 +257,31 @@ case "${CI_SHELL_W}" in
         python "$( ci_natpath "${CI_GENVERSION_PY}" )" "$( ci_natpath "$1" )" $2
     }
 
+    ci_test_harness() {      # run test_harness.py with parameters
+        # argv1= name of gtest executable file
+        # argv2= test_harness config file
+        # argv3= log file to be written (console output also appears on stdout)
+        # argv4= optional path to directory containing argv1
+        local xet=$-
+        set +x
+        local xit=0
+        local test_harness=$( ci_natpath "${CI_TEST_HARNESS_PY}" )
+        local config_file=$( ci_natpath "$2" )
+        local path_to_gtestfile=$( ci_natpath "${4:-.}" )
+        case "$xet" in ( *x* ) set -x ;; esac
+        :
+        : START test_harness "$@"
+        :
+        time python "$test_harness" -c "$config_file" -t $1 -p "$path_to_gtestfile" < /dev/null | tee "$3"
+        tail -10 "$3" | grep -q "exiting with status 0" || {
+            xit=1
+            :
+            : FAILURE ci_test_harness $1
+            :
+        }
+        return $xit
+    }
+
     export CI_SLASH_1_2=
     for i in "/" "//"
     do
@@ -243,12 +299,17 @@ case "${CI_SHELL_W}" in
     ci_scons() {                # run scons via cmd shell and setenv.bat
         local _xet="$-"
         case "${CI_VERBOSE}" in ( [NnFf]* ) set +x ;; esac
+        ci_savenv
+
+        local minusk
+        case "${CI_KEEPGOING}" in ( "" | [NnFf]* ) minusk="" ;; ( * ) minusk=-k ;; esac
         cp "${CI_SCRATCH}/ci_setenv.bat" "${CI_SCRATCH}/ci_scons.bat"
         (
             echo "@echo on"
             case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) echo set ;; esac
-            echo call scons "$@"
+            echo call scons "$@" $minusk
         ) | sed -e 's,$,\r,' >> "${CI_SCRATCH}/ci_scons.bat"
+
         case "$_xet" in ( *x* ) set -x ;; esac
         cmd.exe ${CI_SLASH_1_2}C "$( ci_natpath "${CI_SCRATCH}/ci_scons.bat" )"
     }
@@ -314,6 +375,7 @@ esac
 
 export -f ci_natpath        # convert Jenkins/posix path to "native"
 export -f ci_genversion     # run genversion.py
+export -f ci_test_harness   # run test_harness.py
 export -f ci_slash_1_2      # ci_slash_1_2 gives you the right number of slashes for a command line switch.
                                 # Explained:
     # MSysGit attempts to auto-convert *nix paths as command line parameters to Windows paths.

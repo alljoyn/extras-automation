@@ -96,9 +96,18 @@ gitRB14.12      alljoyn-${1}-src                core/alljoyn                    
 gitRB14.12      alljoyn-js-${1}-src             core/alljoyn-js                 ${2}        -   =   .
 gitRB14.12      alljoyn-lsf-${1}-src            lighting/service_framework      ${2}        -   =   .
 
-# release (14.12a) - only alljoyn, not ajtcl
+# release (14.12a,14.12b) - only alljoyn, not ajtcl
 
-gitv14.12a      alljoyn-${1}-src                core/alljoyn                    v14.12a      -   =   .
+gitv14.12a      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
+gitv14.12b      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
+
+# release (15.04)
+
+gitRB15.04      ajtcl-${1}-src                  core/ajtcl                      ${2}        -   =   .
+gitRB15.04      ajtcl-services-${1}-src         services/base_tcl               ${2}        -   =   .
+gitRB15.04      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
+gitRB15.04      alljoyn-js-${1}-src             core/alljoyn-js                 ${2}        -   =   .
+gitRB15.04      alljoyn-lsf-${1}-src            lighting/service_framework      ${2}        -   =   .
 
 # master
 
@@ -138,6 +147,13 @@ gitRB14.06      alljoyn-services-${1}-src               services/base           
     # then services/base (everything)
 gitRB14.12      alljoyn-services-${1}-src               core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
 gitRB14.12      alljoyn-services-${1}-src               services/base           ${2}        -   .   =
+
+# release (15.04)
+
+    # first core/alljoyn (build_core only)
+    # then services/base (everything)
+gitRB15.04      alljoyn-services-${1}-src               core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
+gitRB15.04      alljoyn-services-${1}-src               services/base           ${2}        -   .   =
 
 # master
 
@@ -301,8 +317,21 @@ if false; then
     # doWork ajtcl-$fileVersion-src
     # doWork ajtcl-services-$fileVersion-src
     # doWork alljoyn-$fileVersion-src
-    # # not yet # doWork alljoyn-lsf-$fileVersion-src
+    # doWork alljoyn-lsf-$fileVersion-src
     # doWork alljoyn-services-$fileVersion-src
+
+
+
+    fileVersion=0.0.1504
+
+    mkTheTable  gitRB15.04  $fileVersion    RB15.04
+
+    # activate this block if jenkins triggers builds on branch RB15.04
+    # doWork ajtcl-$fileVersion-src
+    # # no branch yet # doWork ajtcl-services-$fileVersion-src
+    # doWork alljoyn-$fileVersion-src
+    # # no branch yet # doWork alljoyn-lsf-$fileVersion-src
+    # # no branch yet # doWork alljoyn-services-$fileVersion-src
 
 
 

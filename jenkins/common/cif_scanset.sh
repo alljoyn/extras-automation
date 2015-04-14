@@ -21,6 +21,11 @@
 #   argv3 : list of source files selected
 #   argv4 : list of source files skipped by excludesFile (ie, whitelisted)
 
+case "$cif_scanset_xet" in
+( "" )
+    # cif_xet is undefined, so process this file
+    export cif_scanset_xet=cif_xet
+
 echo >&2 + : BEGIN cif_scanset.sh
 
 ci_scanset() {
@@ -73,4 +78,11 @@ ci_scanset() {
     case "$_xet" in ( *x* ) set -x ;; ( * ) set +x ;; esac
 }
 
+    # end processing this file
+
 echo >&2 + : END cif_scanset.sh
+    ;;
+( * )
+    # ci_xet is already defined, so skip this file
+    ;;
+esac

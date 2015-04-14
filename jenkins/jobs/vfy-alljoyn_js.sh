@@ -80,6 +80,36 @@ case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) ci_showfs ;; esac
 echo >&2 + : STATUS preamble ok
 set -x
 
+case "$( uname )" in
+( Linux )
+    _uncrustify=$( uncrustify --version ) || : ok
+    case "$_uncrustify" in
+    ( uncrustify* )
+        case "${GERRIT_BRANCH}/$_uncrustify" in
+        ( */uncrustify\ 0.61* )
+            _ws=detail
+            ;;
+        ( * )
+            _ws=off
+            :
+            : WARNING $ci_job, found "$_uncrustify", have alljoyn branch="${GERRIT_BRANCH}" : skipping Whitespace scan
+            :
+            ;;
+        esac
+        ;;
+    ( * )
+        _ws=off
+        :
+        : WARNING $ci_job, uncrustify not found: skipping Whitespace scan
+        :
+        ;;
+    esac
+    ;;
+( * )
+    _ws=off
+    ;;
+esac
+
 :
 :
 cd "${WORKSPACE}"
@@ -165,7 +195,7 @@ cd "${WORKSPACE}"
 pushd alljoyn/core/alljoyn-js
     (
         export ALLJOYN_DISTDIR="$( ci_natpath "$ALLJOYN_DISTDIR" )"
-        ci_scons WS=off VARIANT=release DUKTAPE_DIST="$( ci_natpath "${CI_SCRATCH}/${CIAJ_DUKTAPE}" )" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+        ci_scons WS=$_ws VARIANT=release DUKTAPE_DIST="$( ci_natpath "${CI_SCRATCH}/${CIAJ_DUKTAPE}" )" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
     )
     ci_showfs
 
@@ -175,7 +205,7 @@ pushd alljoyn/core/alljoyn-js
     cd console
     (
         export ALLJOYN_DISTDIR="$( ci_natpath "$ALLJOYN_DISTDIR" )"
-        ci_scons WS=off VARIANT=release ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+        ci_scons WS=$_ws VARIANT=release ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
     )
     ci_showfs
 popd
@@ -189,11 +219,9 @@ cd "${WORKSPACE}"
 zip=${CI_ARTIFACT_NAME}
 work=${CI_ARTIFACTS_WORK}/$zip
 to=${CI_ARTIFACTS}/$zip.zip
-(
-    set +e
-    rm -rf "$work" "$to"
-    mkdir -p "$work"
-) || : error ignored
+
+rm -rf "$work" "$to"    || : error ignored
+mkdir -p "$work"        || : error ignored
 
 cp alljoyn/manifest.txt "$work"
 pushd alljoyn/core/alljoyn-js

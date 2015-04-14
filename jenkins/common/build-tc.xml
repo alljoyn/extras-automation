@@ -19,7 +19,7 @@
     <property name="srcDir.ajtcl"           location="${workingDir}/ajtcl" />
     <property name="srcDir.alljoyn"         location="${workingDir}/alljoyn" />
     <property name="sconsDir"               location="${srcDir.alljoyn}" />
-    <property name="sconsSampleDaemon"      location="${sconsDir}/build/${scons.os}/${scons.cpu}/${scons.variant}/dist/cpp/bin/samples/SampleDaemon.exe" />
+    <property name="sconsTrustedTLSampleRN" location="${sconsDir}/build/${scons.os}/${scons.cpu}/${scons.variant}/dist/cpp/bin/samples/TrustedTLSampleRN.exe" />
 
     <property name="sdkWork"                location="${workingDir}/sdks" />
     <property name="sdkTmp"                 location="${sdkWork}/z-${user.name}-${xtstamp}" />
@@ -81,13 +81,13 @@
     <!-- targets -->
 
     <target name="init" >
- 
+
         <echo>
 scons.os        ${scons.os}
 scons.cpu       ${scons.cpu}
 scons.variant   ${scons.variant}
 sconsDir        ${sconsDir}
-sconsSampleDaemon ${sconsSampleDaemon}
+sconsTrustedTLSampleRN ${sconsTrustedTLSampleRN}
 
 srcDir.ajtcl    ${srcDir.ajtcl}
 srcDir.alljoyn  ${srcDir.alljoyn}
@@ -106,7 +106,7 @@ scons.os        ${scons.os}
 scons.cpu       ${scons.cpu}
 scons.variant   ${scons.variant}
 sconsDir        ${sconsDir}
-sconsSampleDaemon ${sconsSampleDaemon}
+sconsTrustedTLSampleRN ${sconsTrustedTLSampleRN}
 
 srcDir.ajtcl    ${srcDir.ajtcl}
 srcDir.alljoyn  ${srcDir.alljoyn}
@@ -127,13 +127,13 @@ extrasList      ${extrasList}
 extrasDir.exists    ${extrasDir.exists}
 extrasList.exists   ${extrasList.exists}</echo>
 
-        <fail message="available checks failed: ${srcDir.ajtcl}/README.md, ${sconsSampleDaemon}" status="1" >
+        <fail message="available checks failed: ${srcDir.ajtcl}/README.md, ${sconsTrustedTLSampleRN}" status="1" >
             <condition>
                 <not>
                     <and>
                         <available file="${srcDir.ajtcl}"               type="dir" />
                         <available file="${srcDir.ajtcl}/README.md"     type="file" />
-                        <available file="${sconsSampleDaemon}"          type="file" />
+                        <available file="${sconsTrustedTLSampleRN}"     type="file" />
                         <!-- extras are optional -->
                     </and>
                 </not>
@@ -217,7 +217,7 @@ ${gitVersion.alljoyn}
         <delete dir="${sdkDir}/core/ajtcl/target/arduino" />
         <delete dir="${sdkDir}/core/ajtcl/docs/html" quiet="true" />
         <move  file="${sdkDir}/core/ajtcl/html" todir="${sdkDir}/core/ajtcl/docs"   overwrite="true" force="true" preservelastmodified="true" />
-        <copy  file="${sconsSampleDaemon}"      todir="${sdkDir}/bin"               overwrite="true" force="true" preservelastmodified="true" />  
+        <copy  file="${sconsTrustedTLSampleRN}" todir="${sdkDir}/bin"               overwrite="true" force="true" preservelastmodified="true" />
     </target>
 
     <target name="extras" depends="dist" if="${extrasDir.exists}" >

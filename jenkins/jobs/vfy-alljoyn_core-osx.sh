@@ -16,6 +16,7 @@
 # Gerrit-verify build for AllJoyn Core (Std) on OSX
 # OSX build uses xcodebuild, not scons, so this build script is different than the other platforms
 
+
 set -e +x
 ci_job=vfy-alljoyn_core-osx.sh
 ci_job_xit=0
@@ -34,6 +35,7 @@ source "${CI_COMMON}/cif_core_gtests.sh"
 ci_savenv
 case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) ci_showfs ;; esac
 echo >&2 + : STATUS preamble ok
+date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
 set -x
 
 :
@@ -43,31 +45,41 @@ cd "${WORKSPACE}"
 ci_genversion alljoyn/core/alljoyn ${GERRIT_BRANCH}  >  alljoyn/manifest.txt
 cp alljoyn/manifest.txt artifacts
 
+:
 : INFO manifest
-
+:
 cat alljoyn/manifest.txt
 
-: START job
-
+:
 :
 : xcodebuilds for google tests and iphone simulator on Mac - "${CIAJ_VARIANT}" only
 :
-
 pushd alljoyn/core/alljoyn
     ci_xcodebuild_simulator "${CIAJ_VARIANT}"
 popd
 
+:
 : google tests
+:
 
 pushd alljoyn/core/alljoyn
     ci_core_gtests darwin x86 "${CIAJ_VARIANT}" || ci_job_xit=$?
 popd
 
-## pushd alljoyn/core/alljoyn/alljoyn_obj/AllJoynFramework_iOS
-## xcodebuild -project AllJoynFramework_iOS.xcodeproj -scheme AllJoynFramework_iOS -sdk iphonesimulator -configuration $configuration test TEST_AFTER_BUILD=YES ## FIXME not with XCode 6
+pushd alljoyn/core/alljoyn/alljoyn_objc/AllJoynFramework_iOS
+    :
+    : xcode simulator test SKIPPED
+    :
+## FIXME for two reasons:
+## 1. xcode simulator does not work with XCode 6, says Ry, unless someone is logged-in to the Console
+## 2. the following commandline only works if the preceding xcodebuilds were run w -configuration Release - ie, if Release bits were built
+##  xcodebuild -project AllJoynFramework_iOS.xcodeproj -scheme AllJoynFramework_iOS -sdk iphonesimulator -configuration $configuration test TEST_AFTER_BUILD=YES \
+##      -derivedDataPath "${CI_SCRATCH}/DerivedData/AllJoynFramework_iOS-iphonesimulator"
+popd
 
 :
 :
 set +x
+date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
 echo >&2 + : STATUS $ci_job exit $ci_job_xit
 exit "$ci_job_xit"
