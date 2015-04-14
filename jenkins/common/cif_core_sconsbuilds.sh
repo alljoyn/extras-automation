@@ -42,8 +42,6 @@ ci_core_sconsbuild() {
     local _os="$1"
     local _cpu="$2"
     local _variant="$3"
-    local _br="$4"
-    local _bindings="$5"
 
     local vartag cputag dist test obj
     eval $( ci_scons_vartags "$@" )
@@ -105,7 +103,7 @@ ci_core_sconsbuild() {
         ;;
     esac
 
-    unset AJ_OS AJ_CPU AJ_VARIANT AJ_BINDINGS AJ_BR AJ_POLICYDB AJ_MSVC_VERSION AJ_ANDROID_API_LEVEL
+    unset AJ_OS AJ_CPU AJ_VARIANT AJ_BINDINGS AJ_BR AJ_POLICYDB AJ_CRYPTO AJ_MSVC_VERSION AJ_ANDROID_API_LEVEL
     unset AJ_GECKO_BASE AJ_JSDOC_DIR AJ_GTEST_DIR AJ_ANDROID_SDK AJ_ANDROID_NDK AJ_ANDROID_SRC
 
     :
@@ -113,9 +111,10 @@ ci_core_sconsbuild() {
     :
 
     ci_scons -j "$NUMBER_OF_PROCESSORS" OS=$_os CPU=$_cpu VARIANT=$_variant \
-        BINDINGS="$_bindings" \
-        BR="$_br" \
-        POLICYDB="${CIAJ_POLICYDB}" \
+        ${CIAJ_BINDINGS:+BINDINGS=}"${CIAJ_BINDINGS}" \
+        ${CIAJ_BR:+BR=}"${CIAJ_BR}" \
+        ${CIAJ_POLICYDB:+POLICYDB=}"${CIAJ_POLICYDB}" \
+        ${CIAJ_CRYPTO:+CRYPTO=}"${CIAJ_CRYPTO}" \
         ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}"${CIAJ_MSVC_VERSION}" \
         ${CIAJ_ANDROID_API_LEVEL:+ANDROID_API_LEVEL=}"${CIAJ_ANDROID_API_LEVEL}" \
         ${_gecko_base:+GECKO_BASE=}"$_gecko_base" \
@@ -162,7 +161,7 @@ ci_core_test_sconsbuild() {
     ( * )       local _gtest_dir=$( ci_natpath "${GTEST_DIR}" ) ;;
     esac
 
-    unset AJ_OS AJ_CPU AJ_VARIANT AJ_BINDINGS AJ_BR AJ_POLICYDB AJ_MSVC_VERSION AJ_ANDROID_API_LEVEL
+    unset AJ_OS AJ_CPU AJ_VARIANT AJ_BINDINGS AJ_BR AJ_POLICYDB AJ_CRYPTO AJ_MSVC_VERSION AJ_ANDROID_API_LEVEL
     unset AJ_GECKO_BASE AJ_JSDOC_DIR AJ_GTEST_DIR AJ_ANDROID_SDK AJ_ANDROID_NDK AJ_ANDROID_SRC
 
     :
@@ -170,8 +169,9 @@ ci_core_test_sconsbuild() {
     :
 
     ci_scons OS=$_os CPU=$_cpu VARIANT=$_variant \
-        BR="${CIAJ_BR}" \
-        POLICYDB="${CIAJ_POLICYDB}" \
+        ${CIAJ_BR:+BR=}"${CIAJ_BR}" \
+        ${CIAJ_POLICYDB:+POLICYDB=}"${CIAJ_POLICYDB}" \
+        ${CIAJ_CRYPTO:+CRYPTO=}"${CIAJ_CRYPTO}" \
         ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}"${CIAJ_MSVC_VERSION}" \
         ${CIAJ_ANDROID_API_LEVEL:+ANDROID_API_LEVEL=}"${CIAJ_ANDROID_API_LEVEL}" \
         ${_gtest_dir:+GTEST_DIR=}"$_gtest_dir" \

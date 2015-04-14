@@ -56,6 +56,7 @@ cat alljoyn/manifest.txt
 :
 pushd alljoyn/core/alljoyn
     ci_xcodebuild_simulator "${CIAJ_VARIANT}"
+    ci_xcodebuild_arm64_only "${CIAJ_VARIANT}"
 popd
 
 :

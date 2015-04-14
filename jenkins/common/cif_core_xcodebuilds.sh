@@ -205,6 +205,54 @@ ci_xcodebuild_arm() {
 }
 export -f ci_xcodebuild_arm
 
+# Like ci_xcodebuild_arm above, except it builds alljoyn_core for arm64 ONLY.
+# Not useful, except added to a verify build it makes a quick sanity ck of recently-added arm64 support.
+#   cwd     : top of AJ Core SCons build tree (ie core/alljoyn)
+#   argv1=[Debug,Release]
+
+ci_xcodebuild_arm64_only() {
+
+    local xet="$-"
+    local xit=0
+
+    :
+    : ci_xcodebuild_arm "$@"
+    :
+    date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
+
+    case "${CIAJ_GTEST}" in
+    ( [NnFf]* ) unset GTEST_DIR ;;
+    esac
+    ci_savenv
+
+    local project _variant configuration vartag
+    eval $( ci_xcode_vartags "$1" )
+
+    pushd alljoyn_objc
+
+        case "${GERRIT_BRANCH}" in
+        ( RB14.* )
+            :
+            : no arm64 until RB15.04
+            :
+            ;;
+        ( * )
+            :
+            : START xcodebuild arm64 / core $configuration
+            :
+            xcodebuild -project alljoyn_darwin.xcodeproj -scheme alljoyn_core_arm64 -sdk iphoneos -configuration $configuration PLATFORM_NAME=iphoneos \
+                -derivedDataPath "${CI_SCRATCH}/DerivedData/alljoyn_darwin-alljoyn_core_arm64-iphoneos"
+            ci_showfs "${WORKSPACE}/alljoyn/core/alljoyn/build/darwin/arm64/iphoneos/$_variant/dist"
+            ;;
+        esac
+    popd
+
+    date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
+    case "$xet" in ( *x* ) set -x ;; ( * ) set +x ;; esac
+    return $xit
+}
+export -f ci_xcodebuild_arm64_only
+
     # end processing this file
 
 echo >&2 + : END cif_core_xcodebuilds.sh
@@ -213,4 +261,3 @@ echo >&2 + : END cif_core_xcodebuilds.sh
     # ci_xet is already defined, so skip this file
     ;;
 esac
-

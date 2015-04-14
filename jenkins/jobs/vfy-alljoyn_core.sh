@@ -58,7 +58,7 @@ cat alljoyn/manifest.txt
 : START job
 
 pushd alljoyn/core/alljoyn
-    ci_core_sconsbuild "${CIAJ_OS}" "${CIAJ_CPU}" "${CIAJ_VARIANT}" "${CIAJ_BR}" "${CIAJ_BINDINGS}"
+    ci_core_sconsbuild "${CIAJ_OS}" "${CIAJ_CPU}" "${CIAJ_VARIANT}"
 popd
 
 case "${CIAJ_OS}" in

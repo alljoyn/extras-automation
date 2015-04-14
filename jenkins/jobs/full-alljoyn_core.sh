@@ -59,7 +59,7 @@ cat alljoyn/manifest.txt
 for _variant in debug release
 do
     pushd alljoyn/core/alljoyn
-        ci_core_sconsbuild "${CIAJ_OS}" "${CIAJ_CPU}" $_variant "${CIAJ_BR}" "${CIAJ_BINDINGS}"
+        ci_core_sconsbuild "${CIAJ_OS}" "${CIAJ_CPU}" $_variant
     popd
 done
 
@@ -142,7 +142,7 @@ done
 for _variant in debug release
 do
     # cram some stuff into this do loop just so we can easily "break" if anything goes wrong
-    # never fail this build just because test_tools does not work
+    # never fail this build just because test_tools does not work - instead, mark UNSTABLE
 
     :
     : START test_tools $_variant
@@ -163,7 +163,7 @@ do
         rm -rf test_tools
         git clone "$b/core/test.git" test_tools || {
             :
-            : ERROR $ci_job, test_tools, ignore above error
+            : UNSTABLE $ci_job, test_tools
             :
             popd
             break
@@ -186,7 +186,7 @@ do
 
             ls SConstruct > /dev/null || {
                 :
-                : ERROR $ci_job, test_tools, ignore above error
+                : UNSTABLE $ci_job, test_tools
                 :
                 popd ; popd
                 break
@@ -197,7 +197,7 @@ do
             :
             ci_core_test_sconsbuild "${CIAJ_OS}" "${CIAJ_CPU}" $_variant || {
                 :
-                : ERROR $ci_job, test_tools $_variant, ignore above error
+                : UNSTABLE $ci_job, test_tools $_variant
                 :
                 popd ; popd
                 break
@@ -209,7 +209,7 @@ do
             :
             ci_zip_simple_artifact "$PWD" "${CI_ARTIFACT_NAME}-test_tools-$vartag" || {
                 :
-                : ERROR $ci_job, test_tools $_variant, ignore above error
+                : UNSTABLE $ci_job, test_tools $_variant
                 :
                 popd ; popd
                 break
