@@ -1,0 +1,86 @@
+variable/parameter name	scope	Jenkins config definition	description
+CI_ARTIFACT_NAME	ad hoc	job parameter	"work in progress, this name probably wont survive"
+CI_ARTIFACTS	all jobs		abs. path to top of artifacts area (workspace): contents are saved by CI std Job config
+CI_ARTIFACTS_WORK	all jobs		abs. path to a scratch location reserved for building artifacts (workspace): CI_SCRATCH/artifacts
+CI_BUILD_SELECTOR_NUMBER			tbd
+CI_BUILD_SELECTOR_PROJECT			tbd
+CI_COMMON	all jobs		"abs. path* to ""common"" CI scripts (workspace}"
+CI_COMMON_PART	all jobs	global env	"rel. path* to ""common"" CI scripts: CI_SRC_AUTOMATION_PART/common"
+CI_ENV	global		special internal env var
+CI_FORCE_HOME	ad hoc	node env	"optional override for workspace HOME, for use when a specific, non-volatile HOME is required. Klocwork, for example."
+CI_FORCE_HOMEDRIVE	"ad hoc, Windows nodes"	node env	"CI_FORCE_HOME, drive component, Windows-style"
+CI_FORCE_HOMEPATH	"ad hoc, Windows nodes"	node env	"CI_FORCE_HOME, path component, Windows-style"
+CI_FORCE_LOCALAPPDATA	"ad hoc, Windows nodes"	node env	"CI_FORCE_HOME, Windows-style"
+CI_FORCE_TEMP	"ad hoc, Windows nodes"	node env	"CI_FORCE_TMP, Windows-style"
+CI_FORCE_TMP	ad hoc	node env	"optional override for workspace TMP, for use when workspace TMP won't work. Using Java jar to zip workspace TMP, for example."
+CI_FORCE_USERPROFILE	"ad hoc, Windows nodes"	node env	"CI_FORCE_HOME, Windows-style"
+CI_FULLSCAN	ad hoc	job parameter	special control for Xyzcity-specific scan job
+CI_GENVERSION_PY	all jobs		abs. path to genversion.py (workspace)
+CI_JOBSCRIPTS	all jobs		abs. path to job scripts (workspace)
+CI_JOBSCRIPTS_PART	all jobs	job env	rel. path* to job scripts: CI_SRC_AUTOMATION_PART/jobs/CI_JOBTYPE
+CI_JOBTYPE	all jobs	job env	"this Job ""Type"""
+CI_KEEPGOING	ad hoc	job parameter	[TtYy]* means try to continue running build even after something failed.  [FfNn]* is default
+CI_NODESCRIPTS	all jobs		abs. path to setenv scripts (workspace)
+CI_NODESCRIPTS_PART	all jobs	node env	rel. path* to setenv scripts: CI_SRC_AUTOMATION/nodes/…/CI_NODETYPE
+CI_NODETYPE	all jobs	node env	"this Node ""Type"""
+CI_PATH	global		special internal env var
+CI_PATH_W	Windows nodes		special internal env var
+CI_REMARKS	all jobs	job parameter	"optional notes for manually-triggered builds, for build description"
+CI_SCRATCH	all jobs		"abs. path to ""scratch"" area (workspace): contents are deleted by CI std Job config "
+CI_SHELL	all jobs	node env	abs. path to bash shell for CI scripts
+CI_SHELL_W	Windows nodes	"node env, Windows"	"CI_SHELL, Windows-style"
+CI_SHELLPATH	all jobs	node env	initial system PATH
+CI_SHELLPATH_W	Windows nodes	"node env, Windows"	"CI_SHELLPATH, Windows-style"
+CI_SITE	all jobs	global env	"""XYZ"" or ""ASA"" for example"
+CI_SLASH_1_2	Windows nodes		"cmd ""/C"" or ""//C"", for Windows Cygwin or MSYSGit"
+CI_SRC_AUTOMATION	all jobs		abs. path to top of CI scripts tree (workspace)
+CI_SRC_AUTOMATION_COMMON	ad hoc	job parameter	"CI_COMMON, alternate form. Only used in Xyzcity-specific ""pdq"" setup. Deprecated."
+CI_SRC_AUTOMATION_PART	all jobs	global env	rel. path* to top of CI scripts tree
+CI_TESTBOT	ad hoc	job parameter	regex matches label(s) of publisher(s) to use; any non-blank triggers failure notification e-mail
+CI_TESTHARNESS_PY	all jobs		abs. path to testharness.py (workspace)
+CI_UPSTREAM_BUILD_URL			tbd
+CI_VERBOSE	all jobs	job parameter	"[TtYy]* means more diagnostic info, [FfNn]* is default"
+CIAJ_ANDROID_API_LEVEL	ad hoc	job parameter	scons parameter
+CIAJ_BINDINGS	ad hoc	job parameter	scons parameter
+CIAJ_BR	ad hoc	job parameter	scons parameter
+CIAJ_CORE_GITREV	ad hoc	job parameter	Git version to use
+CIAJ_CORE_SDK	ad hoc	job parameter	related to scons parameter
+CIAJ_CORE_SDK_ZIP	ad hoc	job parameter	related to scons parameter
+CIAJ_CPU	ad hoc	job parameter	scons parameter
+CIAJ_CRYPTO	ad hoc	job parameter	scons parameter
+CIAJ_DUKTAPE	ad hoc	job parameter	related to scons parameter
+CIAJ_DUKTAPE_ZIP	ad hoc	job parameter	related to scons parameter
+CIAJ_GTEST	ad hoc	job parameter	on/off
+CIAJ_LGEFM32_GITREV	ad hoc	job parameter	Git version to use (Xyzcity-specific IAR build)
+CIAJ_MSVC_VERSION	ad hoc	job parameter	scons parameter
+CIAJ_OS	ad hoc	job parameter	scons parameter
+CIAJ_POLICYDB	ad hoc	job parameter	scons parameter
+CIAJ_SERVICES_GITREV	ad hoc	job parameter	Git version to use
+CIAJ_VARIANT	ad hoc	job parameter	scons parameter
+CIXYZ_KLOCWORK_PROJECT_BASENAME	"ad hoc, XYZ nodes"	job parameter	related to KW proj name
+CIXYZ_KLOCWORK_PROJECT_PREFIX	"ad hoc, XYZ nodes"	job parameter	related to KW proj name(s)
+CIXYZ_KLOCWORK_SOURCE_PROJECT	"ad hoc, XYZ nodes"	job parameter	"KW proj to copy, if creating new project"
+CIXYZ_KLOCWORK_URL	"ad hoc, XYZ nodes"	job parameter	KW server URL
+CIXYZ_SDK	XYZ nodes	node env	abs. path to shared files containing SDKs copied daily from ASA, as mounted this node
+CIXYZ_SHARE	XYZ nodes	node env	abs. path to general-purpose static shared files, as mounted this node
+CIXYZ_SHOPT	XYZ nodes		abs. path to CI_SHARE/opt
+CIXYZ_SHOPT_NODE	XYZ nodes		abs. path to CI_SHARE/opt/node_types/CI_NODETYPE
+CIXYZ_TEST_TOOLS	XYZ nodes		abs. path to top of TEST_TOOLS tree (workspace)
+CIXYZ_TEST_TOOLS_PART	XYZ nodes	global env	rel. path* to top of TEST_TOOLS tree
+GECKO_BASE	ad hoc	job parameter	scons parameter
+GERRIT_BRANCH	all jobs	"job parameter, Gerrit"	"Git branch for Jenkins SCM (from trigger, else manual input)"
+GERRIT_PROJECT	ad hoc	"job parameter, Gerrit"	"Git project for Jenkins SCM, like core/alljoyn (from trigger, else manual input)"
+GERRIT_REFSPEC	all jobs	"job parameter, Gerrit"	"Git refspec for Jenkins SCM, like refs/changes/34/1234/5 (from trigger, else manual input)"
+GIT_COMMIT	ad hoc	Gerrit	Git rev according to Gerrit (from Git plugin)
+GTEST_DIR	ad hoc	job parameter	scons parameter
+HOME	all jobs		"abs. path, resets system HOME to local WORKSPACE/home."
+HOMEDRIVE	Windows nodes		"HOME, drive letter component, Windows-style"
+HOMEPATH	Windows nodes		"HOME, path component, Windows-style"
+JSDOC_DIR	ad hoc	job parameter	scons parameter
+LOCALAPPDATA	Windows nodes		"HOME, Windows-style"
+PATH	all jobs	node env	"system PATH, as adjusted for AllJoyn in Jenkins CI framework"
+TEMP	Windows nodes		"TMP, Windows-style"
+TMP	all jobs		"abs. path, resets system TMP to local WORKSPACE/tmp"
+TMPDIR	all jobs		TMP
+USERPROFILE	Windows nodes		"HOME, Windows-style"
+WORKSPACE	all jobs	Gerrit	abs. path to WORKSPACE

@@ -236,7 +236,7 @@ case "${CI_SHELL_W}" in
                 _buf=$( echo "$1" | sed -e 's,^/\(.\),\1:\\,' )
                 echo "${_buf}"
                 ;;
-            (  //* )            # rewrite UNC path like //chips/* to '\\chips\*'
+            (  //* )            # rewrite UNC path like //filer/* to '\\filer\*'
                 echo "$1" | sed -e 's,/,\\,g'
                 ;;
             (  /* )             # rewrite native path like /home/* (msys native) to 'C:\msys\root\home\*' (for example)

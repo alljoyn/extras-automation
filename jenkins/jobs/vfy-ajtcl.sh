@@ -169,7 +169,7 @@ case "${CI_SHELL_W}" in
         : START find a Linux daemon
         :
 
-        archive=/local/mnt/chips/alljoyn_build/master
+        archive=/local/mnt/filer/alljoyn_build/master
         branch=${GERRIT_BRANCH}
         from_build_bin_zip=$( ls -1trd "$archive/testbot/$branch/trusty_off/bin-dbg.zip" | tail -1 ) || : ok for now
 
