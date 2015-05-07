@@ -13,7 +13,7 @@
 #    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-# Full build for AllJoyn Core (Std) on OSX
+# Full build for AllJoyn Std Core on OSX
 # OSX build uses xcodebuild, not scons, so this build script is different than the other platforms
 
 set -e +x
@@ -68,8 +68,8 @@ done
 :
 date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
 cd "${WORKSPACE}"
-ant -f "${CI_COMMON}/build-mac.xml" $_verbose -DsdkWork="${CI_ARTIFACTS_WORK}" -DsconsDir="${WORKSPACE}/alljoyn/core/alljoyn" -DsdkName="${CI_ARTIFACT_NAME}-sdk"
-mv -f "${CI_ARTIFACTS_WORK}/${CI_ARTIFACT_NAME}-sdk.zip" "${CI_ARTIFACTS}"
+ant -f "${CI_COMMON}/build-mac.xml" $_verbose -DsdkWork="${CI_ARTIFACTS_SCRATCH}" -DsconsDir="${WORKSPACE}/alljoyn/core/alljoyn" -DsdkName="${CI_ARTIFACT_NAME}-sdk"
+mv -f "${CI_ARTIFACTS_SCRATCH}/${CI_ARTIFACT_NAME}-sdk.zip" "${CI_ARTIFACTS}"
 
 :
 : START dist and test zips

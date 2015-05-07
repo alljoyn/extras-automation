@@ -3,7 +3,7 @@
     <description>selects src files wanted for next source scan using Ant fileset features</description>
 
     <target name="init">
-        <fail message="missing -Dbasedir=$CI_SCRATCH/src on commandline?" status="1" >
+        <fail message="missing -Dbasedir=$CI_WORK/src on commandline?" status="1" >
             <condition>
                 <available file="${basedir}/scanset.xml" type="file" />
             </condition>

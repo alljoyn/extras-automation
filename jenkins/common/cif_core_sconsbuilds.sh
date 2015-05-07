@@ -22,12 +22,12 @@ source "${CI_COMMON}/cif_scons_vartags.sh"
 
 echo >&2 + : BEGIN cif_core_sconsbuilds.sh
 
-# function runs scons builds for AllJoyn Core for all targets except iOS
+# function runs scons builds for AllJoyn Std Core for all targets except iOS
 # producing bins to run google tests and junit on the target
-#   cwd     : top of AJ Core SCons build tree (ie core/alljoyn)
-#   argv1,2,3 : OS,CPU,VARIANT : as in build/$OS/$CPU/$VARIANT/dist path, as in AJ Core SCons options OS,CPU,VARIANT
-#   argv4   : BR=[on, off] : "bundled router" -or- "router daemon" (alljoyn-daemon), as in AJ Core SCons option BR
-#   argv5   : BINDINGS : cpp,c,etc, as in AJ Core SCons option BINDINGS
+#   cwd     : top of AJ Std Core SCons build tree (ie core/alljoyn)
+#   argv1,2,3 : OS,CPU,VARIANT : as in build/$OS/$CPU/$VARIANT/dist path, as in AJ Std Core SCons options OS,CPU,VARIANT
+#   argv4   : BR=[on, off] : "bundled router" -or- "router daemon" (alljoyn-daemon), as in AJ Std Core SCons option BR
+#   argv5   : BINDINGS : cpp,c,etc, as in AJ Std Core SCons option BINDINGS
 
 ci_core_sconsbuild() {
 
@@ -70,7 +70,7 @@ ci_core_sconsbuild() {
         case "$_uncrustify" in
         ( uncrustify* )
             case "${GERRIT_BRANCH}/$_uncrustify" in
-            ( RB14.12/uncrustify\ 0.61* )
+            ( RB14.12/uncrustify\ 0.61* | feature/security2.0/uncrustify\ 0.61* )
                 local _ws=off
                 :
                 : WARNING $ci_job, found "$_uncrustify", have alljoyn branch="${GERRIT_BRANCH}" : skipping Whitespace scan
@@ -133,9 +133,9 @@ ci_core_sconsbuild() {
 }
 export -f ci_core_sconsbuild
 
-# function runs scons builds for AllJoyn Core / test_tools for all targets except iOS
+# function runs scons builds for AllJoyn Std Core / test_tools for all targets except iOS
 #   cwd     : top of test_tools build tree (ie core/test/scl)
-#   argv1,2,3 : OS,CPU,VARIANT : as in build/$OS/$CPU/$VARIANT/dist path, as in AJ Core SCons options OS,CPU,VARIANT
+#   argv1,2,3 : OS,CPU,VARIANT : as in build/$OS/$CPU/$VARIANT/dist path, as in AJ Std Core SCons options OS,CPU,VARIANT
 
 ci_core_test_sconsbuild() {
 

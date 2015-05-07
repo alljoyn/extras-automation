@@ -94,7 +94,7 @@ case "${CI_SHELL_W}" in
 
     # extend ci_setenv.bat file for CMD processes to use later
 
-    cat <<EOF | sed -e 's/$/\r/' >> "${CI_SCRATCH}/ci_setenv.bat"
+    cat <<EOF | sed -e 's/$/\r/' >> "${CI_WORK}/ci_setenv.bat"
 
     REM xyz/w2012.sh
 
@@ -122,7 +122,7 @@ set DOXYGEN_HOME=$( ci_natpath "$DOXYGEN_HOME" )
 set GRAPHVIZ_HOME=$( ci_natpath "$GRAPHVIZ_HOME" )
 set CIXYZ_TEST_TOOLS=$( ci_natpath "$CIXYZ_TEST_TOOLS" )
 EOF
-    case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) : INFO show ci_setenv.bat, extended ; cat "${CI_SCRATCH}/ci_setenv.bat" ;; esac
+    case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) : INFO show ci_setenv.bat, extended ; cat "${CI_WORK}/ci_setenv.bat" ;; esac
 
         # a job may call unit test, etc directly from bash, without going through Windows CMD as we do for scons
         # if so, the native Windows tools that use these variables will expect native Windows paths

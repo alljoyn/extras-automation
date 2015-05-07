@@ -27,6 +27,8 @@ case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) ci_showfs ;; esac
 echo >&2 + : STATUS preamble ok
 set -x
 
+case "${CI_VERBOSE}" in ( [NnFf]* ) _verbose=0 ;; ( * ) _verbose=1 ;; esac
+
 :
 :
 cd "${WORKSPACE}"
@@ -42,13 +44,17 @@ cat alljoyn/manifest.txt
 : START scons ajtcl dbg
 :
 
-rm -f "${CI_SCRATCH}/ajtcl.tar"
+rm -f   "${CI_SCRATCH}/ajtcl.tar"
 tar -cf "${CI_SCRATCH}/ajtcl.tar" alljoyn/core/ajtcl
 
 pushd alljoyn/core/ajtcl
-    ci_scons WS=off VARIANT=debug GTEST_DIR="$( ci_natpath "$GTEST_DIR" )" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+    ci_scons V=$_verbose WS=off VARIANT=debug GTEST_DIR="$( ci_natpath "$GTEST_DIR" )" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
     ci_showfs
 popd
+
+:
+: START artifact
+:
 
 cd "${WORKSPACE}"
 

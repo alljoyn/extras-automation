@@ -33,7 +33,7 @@ ci_exit() {
     date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
 
     case "$1" in ( [0-9] | [1-9][0-9] | [1-9][0-9][0-9] ) xit=$1 ; shift ;; ( * ) xit=2 ;; esac
-    case $xit in ( 0 ) ;; ( * ) echo >&2 + : ERROR "$@" ;; esac
+    case $xit in ( 0 ) echo >&2 + : EXIT "$@" ;; ( * ) echo >&2 + : ERROR "$@" ;; esac
 
     case "$ci_xet" in
     ( *i* )
@@ -146,15 +146,17 @@ export CI_COMMON=${WORKSPACE}/${CI_COMMON_PART}
 export CI_JOBSCRIPTS=${WORKSPACE}/${CI_JOBSCRIPTS_PART}
 export CI_NODESCRIPTS=${WORKSPACE}/${CI_NODESCRIPTS_PART}
 export CI_GENVERSION_PY=${CI_COMMON}/genversion.py
+export CI_TEST_HARNESS_PY=${CI_COMMON}/test_harness.py
 
 ci_ck_fullpath CI_JOBSCRIPTS CI_NODESCRIPTS
-ci_ck_found CI_SRC_AUTOMATION CI_COMMON CI_GENVERSION_PY
+ci_ck_found CI_SRC_AUTOMATION CI_COMMON CI_GENVERSION_PY CI_TEST_HARNESS_PY
 
+export CI_WORK=${WORKSPACE}/work
 export CI_SCRATCH=${WORKSPACE}/scratch
 export CI_ARTIFACTS=${WORKSPACE}/artifacts
-export CI_ARTIFACTS_WORK=${CI_SCRATCH}/artifacts
+export CI_ARTIFACTS_SCRATCH=${CI_SCRATCH}/artifacts
 
-ci_ck_fullpath CI_SCRATCH CI_ARTIFACTS CI_ARTIFACTS_WORK
+ci_ck_fullpath CI_WORK CI_SCRATCH CI_ARTIFACTS CI_ARTIFACTS_SCRATCH
 
 export HOME=${WORKSPACE}/home
 export TMP=${WORKSPACE}/tmp
@@ -162,9 +164,10 @@ export TMPDIR=${WORKSPACE}/tmp
 
 mkdir -p "$HOME" 2>/dev/null    || : error ignored
 mkdir -p "$TMP" 2>/dev/null     || : error ignored
-mkdir -p "${CI_SCRATCH}" 2>/dev/null    || : error ignored
+mkdir -p "${CI_WORK}" 2>/dev/null   || : error ignored
+mkdir -p "${CI_SCRATCH}" 2>/dev/null  || : error ignored
 mkdir -p "${CI_ARTIFACTS}" 2>/dev/null  || : error ignored
-mkdir -p "${CI_ARTIFACTS_WORK}" 2>/dev/null     || : error ignored
+mkdir -p "${CI_ARTIFACTS_SCRATCH}" 2>/dev/null     || : error ignored
 
 # force_home and force_tmp allow the job to fallback to "real" home or tmp, if needed
 # optional, defined in Jenkins Node config
@@ -221,7 +224,7 @@ case "${CI_SHELL_W}" in
     export CI_FORCE_TEMP=$_force_tmp_w
 
     # write setenv.bat file for CMD processes to use later
-    cat <<EOF | sed -e 's,$,\r,' > "${CI_SCRATCH}/ci_setenv.bat"
+    cat <<EOF | sed -e 's,$,\r,' > "${CI_WORK}/ci_setenv.bat"
 $(
     case "${CI_VERBOSE}" in ( [NnFf]* ) echo "@echo off" ;; ( * ) echo "@echo on" ;; esac
 )
@@ -247,17 +250,18 @@ set TEMP=$_tmp_w
 set TMP=$_tmp_w
 set TMPDIR=$_tmp_w
 set CI_ARTIFACTS=$( ci_natpath "${CI_ARTIFACTS}" )
-set CI_ARTIFACTS_WORK=$( ci_natpath "${CI_ARTIFACTS_WORK}" )
+set CI_ARTIFACTS_SCRATCH=$( ci_natpath "${CI_ARTIFACTS_SCRATCH}" )
 set CI_COMMON=$( ci_natpath "${CI_COMMON}" )
 set CI_GENVERSION_PY=$( ci_natpath "${CI_GENVERSION_PY}" )
 set CI_TEST_HARNESS_PY=$( ci_natpath "${CI_TEST_HARNESS_PY}" )
 set CI_SRC_AUTOMATION=$( ci_natpath "${CI_SRC_AUTOMATION}" )
 set CI_JOBSCRIPTS=$( ci_natpath "${CI_JOBSCRIPTS}" )
 set CI_NODESCRIPTS=$( ci_natpath "${CI_NODESCRIPTS}" )
+set CI_WORK=$( ci_natpath "${CI_WORK}" )
 set CI_SCRATCH=$( ci_natpath "${CI_SCRATCH}" )
 set WORKSPACE=$( ci_natpath "${WORKSPACE}" )
 EOF
-    case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) : INFO show ci_setenv.bat ; cat "${CI_SCRATCH}/ci_setenv.bat" ;; esac
+    case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) : INFO show ci_setenv.bat ; cat "${CI_WORK}/ci_setenv.bat" ;; esac
     ;;
 esac
 
@@ -273,6 +277,22 @@ else
     mkdir -p "${CI_ENV}" || : ok
     mv -f setenv00.sh setfun00.sh "${CI_ENV}"
 fi
+
+    # process upstream job 1 environment, if any
+_t=$( ls "${CI_SCRATCH}/up1/artifacts/env/setenv.sh" ) || : ok
+case "$_t" in
+( /*/setenv.sh )
+    # found setenv.sh from upstream job
+    ci_savenv
+    ci_upsetenv 1
+    echo >&2 + : source up1setenv.sh
+    source "${CI_ARTIFACTS}/env/up1setenv.sh"
+    ;;
+( * )
+    # no upstream env found
+    unset CI_UP1
+    ;;
+esac
 
         # end processing this file
 ci_savenv

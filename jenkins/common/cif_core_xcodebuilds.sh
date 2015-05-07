@@ -38,9 +38,9 @@ ci_xcode_vartags() {
 }
 export -f ci_xcode_vartags
 
-# function runs xcode builds for AllJoyn Core on Mac OSX for either Debug or Release,
+# function runs xcode builds for AllJoyn Std Core on Mac OSX for either Debug or Release,
 # producing bins to run google tests and iphone simulator on a Mac
-#   cwd     : top of AJ Core SCons build tree (ie core/alljoyn)
+#   cwd     : top of AJ Std Core SCons build tree (ie core/alljoyn)
 #   argv1=[Debug,Release]
 
 ci_xcodebuild_simulator() {
@@ -66,14 +66,14 @@ ci_xcodebuild_simulator() {
         : START xcodebuild x86 / core $configuration
         :
         xcodebuild -project alljoyn_darwin.xcodeproj -scheme alljoyn_core_osx -configuration $configuration \
-            -derivedDataPath "${CI_SCRATCH}/DerivedData/alljoyn_darwin-alljoyn_core_osx"
+            -derivedDataPath "${CI_WORK}/DerivedData/alljoyn_darwin-alljoyn_core_osx"
         ci_showfs "${WORKSPACE}/alljoyn/core/alljoyn/build/darwin/x86/$_variant/dist"
 
         :
         : START xcodebuild simulator / core $configuration
         :
         xcodebuild -project alljoyn_darwin.xcodeproj -scheme alljoyn_core_ios -sdk iphonesimulator -configuration $configuration PLATFORM_NAME=iphonesimulator \
-            -derivedDataPath "${CI_SCRATCH}/DerivedData/alljoyn_darwin-alljoyn_core_ios-iphonesimulator"
+            -derivedDataPath "${CI_WORK}/DerivedData/alljoyn_darwin-alljoyn_core_ios-iphonesimulator"
         ci_showfs "${WORKSPACE}/alljoyn/core/alljoyn/build/darwin/arm/iphonesimulator/$_variant/dist"
     popd
 
@@ -83,7 +83,7 @@ ci_xcodebuild_simulator() {
     :
     pushd alljoyn_objc/AllJoynFramework_iOS
         xcodebuild -project $project.xcodeproj -scheme $project ONLY_ACTIVE_ARCHS=NO -configuration $configuration -sdk iphonesimulator \
-            -derivedDataPath "${CI_SCRATCH}/DerivedData/$project-iphonesimulator"
+            -derivedDataPath "${CI_WORK}/DerivedData/$project-iphonesimulator"
     popd
 
     project=alljoyn_about_cpp
@@ -92,7 +92,7 @@ ci_xcodebuild_simulator() {
     :
     pushd services/about/ios/samples/alljoyn_services_cpp
         xcodebuild -project $project.xcodeproj -scheme $project ONLY_ACTIVE_ARCHS=NO -configuration $configuration -sdk iphonesimulator \
-            -derivedDataPath "${CI_SCRATCH}/DerivedData/$project-iphonesimulator"
+            -derivedDataPath "${CI_WORK}/DerivedData/$project-iphonesimulator"
     popd
 
     project=alljoyn_about_objc
@@ -101,7 +101,7 @@ ci_xcodebuild_simulator() {
     :
     pushd services/about/ios/samples/alljoyn_services_objc
         xcodebuild -project $project.xcodeproj -scheme $project ONLY_ACTIVE_ARCHS=NO -configuration $configuration -sdk iphonesimulator \
-            -derivedDataPath "${CI_SCRATCH}/DerivedData/$project-iphonesimulator"
+            -derivedDataPath "${CI_WORK}/DerivedData/$project-iphonesimulator"
     popd
 
     date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
@@ -110,9 +110,9 @@ ci_xcodebuild_simulator() {
 }
 export -f ci_xcodebuild_simulator
 
-# function runs xcode builds for AllJoyn Core on Mac OSX for either Debug or Release,
+# function runs xcode builds for AllJoyn Std Core on Mac OSX for either Debug or Release,
 # producing bins for arm / ios
-#   cwd     : top of AJ Core SCons build tree (ie core/alljoyn)
+#   cwd     : top of AJ Std Core SCons build tree (ie core/alljoyn)
 #   argv1=[Debug,Release]
 
 ci_xcodebuild_arm() {
@@ -138,21 +138,21 @@ ci_xcodebuild_arm() {
         : START xcodebuild arm / core $configuration
         :
         xcodebuild -project alljoyn_darwin.xcodeproj -scheme alljoyn_core_ios -sdk iphoneos -configuration $configuration PLATFORM_NAME=iphoneos \
-            -derivedDataPath "${CI_SCRATCH}/DerivedData/alljoyn_darwin-alljoyn_core_ios-iphoneos"
+            -derivedDataPath "${CI_WORK}/DerivedData/alljoyn_darwin-alljoyn_core_ios-iphoneos"
         ci_showfs "${WORKSPACE}/alljoyn/core/alljoyn/build/darwin/arm/iphoneos/$_variant/dist"
 
         :
         : START xcodebuild armv7 / core $configuration
         :
         xcodebuild -project alljoyn_darwin.xcodeproj -scheme alljoyn_core_ios_armv7 -sdk iphoneos -configuration $configuration PLATFORM_NAME=iphoneos \
-            -derivedDataPath "${CI_SCRATCH}/DerivedData/alljoyn_darwin-alljoyn_core_ios_armv7-iphoneos"
+            -derivedDataPath "${CI_WORK}/DerivedData/alljoyn_darwin-alljoyn_core_ios_armv7-iphoneos"
         ci_showfs "${WORKSPACE}/alljoyn/core/alljoyn/build/darwin/armv7/iphoneos/$_variant/dist"
 
         :
         : START xcodebuild armv7s / core $configuration
         :
         xcodebuild -project alljoyn_darwin.xcodeproj -scheme alljoyn_core_ios_armv7s -sdk iphoneos -configuration $configuration PLATFORM_NAME=iphoneos \
-            -derivedDataPath "${CI_SCRATCH}/DerivedData/alljoyn_darwin-alljoyn_core_ios_armv7s-iphoneos"
+            -derivedDataPath "${CI_WORK}/DerivedData/alljoyn_darwin-alljoyn_core_ios_armv7s-iphoneos"
         ci_showfs "${WORKSPACE}/alljoyn/core/alljoyn/build/darwin/armv7s/iphoneos/$_variant/dist"
 
         case "${GERRIT_BRANCH}" in
@@ -166,7 +166,7 @@ ci_xcodebuild_arm() {
             : START xcodebuild arm64 / core $configuration
             :
             xcodebuild -project alljoyn_darwin.xcodeproj -scheme alljoyn_core_arm64 -sdk iphoneos -configuration $configuration PLATFORM_NAME=iphoneos \
-                -derivedDataPath "${CI_SCRATCH}/DerivedData/alljoyn_darwin-alljoyn_core_arm64-iphoneos"
+                -derivedDataPath "${CI_WORK}/DerivedData/alljoyn_darwin-alljoyn_core_arm64-iphoneos"
             ci_showfs "${WORKSPACE}/alljoyn/core/alljoyn/build/darwin/arm64/iphoneos/$_variant/dist"
             ;;
         esac
@@ -178,7 +178,7 @@ ci_xcodebuild_arm() {
     :
     pushd alljoyn_objc/AllJoynFramework_iOS
         xcodebuild -project $project.xcodeproj -scheme $project ONLY_ACTIVE_ARCHS=NO -configuration $configuration -sdk iphoneos \
-            -derivedDataPath "${CI_SCRATCH}/DerivedData/$project-iphoneos"
+            -derivedDataPath "${CI_WORK}/DerivedData/$project-iphoneos"
     popd
 
     project=alljoyn_about_cpp
@@ -187,7 +187,7 @@ ci_xcodebuild_arm() {
     :
     pushd services/about/ios/samples/alljoyn_services_cpp
         xcodebuild -project $project.xcodeproj -scheme $project ONLY_ACTIVE_ARCHS=NO -configuration $configuration -sdk iphoneos \
-            -derivedDataPath "${CI_SCRATCH}/DerivedData/$project-iphoneos"
+            -derivedDataPath "${CI_WORK}/DerivedData/$project-iphoneos"
     popd
 
     project=alljoyn_about_objc
@@ -196,7 +196,7 @@ ci_xcodebuild_arm() {
     :
     pushd services/about/ios/samples/alljoyn_services_objc
         xcodebuild -project $project.xcodeproj -scheme $project ONLY_ACTIVE_ARCHS=NO -configuration $configuration -sdk iphoneos \
-            -derivedDataPath "${CI_SCRATCH}/DerivedData/$project-iphoneos"
+            -derivedDataPath "${CI_WORK}/DerivedData/$project-iphoneos"
     popd
 
     date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
@@ -207,7 +207,7 @@ export -f ci_xcodebuild_arm
 
 # Like ci_xcodebuild_arm above, except it builds alljoyn_core for arm64 ONLY.
 # Not useful, except added to a verify build it makes a quick sanity ck of recently-added arm64 support.
-#   cwd     : top of AJ Core SCons build tree (ie core/alljoyn)
+#   cwd     : top of AJ Std Core SCons build tree (ie core/alljoyn)
 #   argv1=[Debug,Release]
 
 ci_xcodebuild_arm64_only() {
@@ -241,7 +241,7 @@ ci_xcodebuild_arm64_only() {
             : START xcodebuild arm64 / core $configuration
             :
             xcodebuild -project alljoyn_darwin.xcodeproj -scheme alljoyn_core_arm64 -sdk iphoneos -configuration $configuration PLATFORM_NAME=iphoneos \
-                -derivedDataPath "${CI_SCRATCH}/DerivedData/alljoyn_darwin-alljoyn_core_arm64-iphoneos"
+                -derivedDataPath "${CI_WORK}/DerivedData/alljoyn_darwin-alljoyn_core_arm64-iphoneos"
             ci_showfs "${WORKSPACE}/alljoyn/core/alljoyn/build/darwin/arm64/iphoneos/$_variant/dist"
             ;;
         esac

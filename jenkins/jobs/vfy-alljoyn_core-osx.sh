@@ -13,7 +13,7 @@
 #    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-# Gerrit-verify build for AllJoyn Core (Std) on OSX
+# Gerrit-verify build for AllJoyn Std Core on OSX
 # OSX build uses xcodebuild, not scons, so this build script is different than the other platforms
 
 
@@ -75,7 +75,7 @@ pushd alljoyn/core/alljoyn/alljoyn_objc/AllJoynFramework_iOS
 ## 1. xcode simulator does not work with XCode 6, says Ry, unless someone is logged-in to the Console
 ## 2. the following commandline only works if the preceding xcodebuilds were run w -configuration Release - ie, if Release bits were built
 ##  xcodebuild -project AllJoynFramework_iOS.xcodeproj -scheme AllJoynFramework_iOS -sdk iphonesimulator -configuration $configuration test TEST_AFTER_BUILD=YES \
-##      -derivedDataPath "${CI_SCRATCH}/DerivedData/AllJoynFramework_iOS-iphonesimulator"
+##      -derivedDataPath "${CI_WORK}/DerivedData/AllJoynFramework_iOS-iphonesimulator"
 popd
 
 :

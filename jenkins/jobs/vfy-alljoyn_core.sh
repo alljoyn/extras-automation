@@ -13,7 +13,7 @@
 #    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-# Gerrit-verify build for AllJoyn Core (Std) on all platforms except OSX
+# Gerrit-verify build for AllJoyn Std Core on all platforms except OSX
 
 
 set -e +x
@@ -63,19 +63,41 @@ popd
 
 case "${CIAJ_OS}" in
 ( linux | win7 )
-    :
-    : google tests
-    :
     pushd alljoyn/core/alljoyn
+        :
+        : google tests
+        :
         ci_core_gtests "${CIAJ_OS}" "${CIAJ_CPU}" "${CIAJ_VARIANT}" "${CIAJ_BR}" "${CIAJ_BINDINGS}"
-    popd
 
-    :
-    : junit tests
-    :
-    pushd alljoyn/core/alljoyn
+        :
+        : junit tests
+        :
         ci_core_ready_junits "${CIAJ_OS}" "${CIAJ_CPU}" "${CIAJ_VARIANT}"
         ci_core_junits "${CIAJ_OS}" "${CIAJ_CPU}" "${CIAJ_VARIANT}" "${CIAJ_BR}"
+
+    ##  case "${CIAJ_OS}" in
+    ##  ( linux )
+    ##      :
+    ##      : START make samples
+    ##      :
+    ##      coresamples="build/${CIAJ_OS}/${CIAJ_CPU}/${CIAJ_VARIANT}/dist/cpp/samples"
+    ##      ls -la "$coresamples"
+    ##      list=$( find "$coresamples" -type f -name Makefile | sort )
+
+    ##      echo "$list" | while read i
+    ##      do
+    ##          case "$i" in ( "" ) continue ;; esac
+    ##          d=$( dirname "$i" )
+    ##          pushd "$d"
+    ##              :
+    ##              : INFO $d
+    ##              :
+    ##              ls -la
+    ##              make
+    ##          popd
+    ##      done
+    ##      ;;
+    ##  esac
     popd
     ;;
 ( android )

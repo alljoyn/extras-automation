@@ -20,7 +20,9 @@ ci_declare_env() {
     local _xet="$-"
     set +x
 
-    declare -px | awk '
+    mkdir -p "${WORKSPACE}/work" || : ok
+    rm -f "${WORKSPACE}/work/ci_declare_env.awk"
+    cat << \EoF > "${WORKSPACE}/work/ci_declare_env.awk"
     # continuation line - p means print
 $1 " " $2 !~ /^declare -[^ ]+$/     { if( p+0 != 0 ) print; next; }
     # $0 contains "declare -x name=value"
@@ -193,7 +195,10 @@ u "" == "XDG_SESSION_ID"            { next; }
 u "" == "XFILESEARCHPATH"           { next; }
     # print this variable
                                     { p=1; print; }
-'
+EoF
+
+    declare -px | awk -f "${WORKSPACE}/work/ci_declare_env.awk"
+
     case "$_xet" in ( *x* ) set -x ;; esac
 }
 # export -f ci_declare_env   # not yet

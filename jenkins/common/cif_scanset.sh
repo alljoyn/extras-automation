@@ -13,7 +13,7 @@
 #    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-# function selects src files wanted for next source scan, and copies them from cwd to scratch/src
+# function selects src files wanted for next source scan, and copies them from cwd to work/src
 #   cwd : top of Git workdir, e.g. src/
 #   stdin : list of files Git changed, as from git show
 #   argv1 : Ant "includesFile" : e.g., **/*.cpp, one pattern per line
@@ -38,7 +38,7 @@ ci_scanset() {
 
     case "$_fullscan" in
     ( [NnFf]* )
-        : copy source files Git changed from cwd to scratch/src # reads am f from stdin
+        : copy source files Git changed from cwd to work/src # reads am f from stdin
         local am f xit
         while read -r am f
         do
@@ -46,11 +46,11 @@ ci_scanset() {
                 ( "" | *[!ADM]* ) ;;
                 ( *A*|*M* ) test -f "$f" && echo "$f" ;;
             esac
-        done | cpio -pmdu "${CI_SCRATCH}/src"
+        done | cpio -pmdu "${CI_WORK}/src"
         ;;
     ( * )
-        : copy ALL source files from cwd to scratch/src
-        find . \( -type d \( -name .git -o -name .repo \) -prune \) -o \( -type f ! -type l -print \) | cpio -pmdu "${CI_SCRATCH}/src"
+        : copy ALL source files from cwd to work/src
+        find . \( -type d \( -name .git -o -name .repo \) -prune \) -o \( -type f ! -type l -print \) | cpio -pmdu "${CI_WORK}/src"
         ;;
     esac
 
@@ -63,11 +63,11 @@ ci_scanset() {
     cat >&2 "$2"
     echo >&2
 
-    : Ant scanset.xml to remove unwanted files from scratch/src
-    ant -f "${CI_COMMON}/scanset.xml" -Dbasedir="${CI_SCRATCH}/src" -Dscanset.includesFile="$1" -Dscanset.excludesFile="$2" -Dscanset.skipped="$4"
+    : Ant scanset.xml to remove unwanted files from work/src
+    ant -f "${CI_COMMON}/scanset.xml" -Dbasedir="${CI_WORK}/src" -Dscanset.includesFile="$1" -Dscanset.excludesFile="$2" -Dscanset.skipped="$4"
 
     : list of source files selected
-    ( cd "${CI_SCRATCH}/src" && find . -type f ! -type l ) | sed -e 's,^\..,,' | sort > "$3"
+    ( cd "${CI_WORK}/src" && find . -type f ! -type l ) | sed -e 's,^\..,,' | sort > "$3"
 
     : rm skipped_files list if empty - the unusual test below is because Ant always writes an LF even if no text
     xit=$( wc -c < "$4" )

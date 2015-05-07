@@ -20,9 +20,10 @@ case "$cif_scons_vartags_xet" in
 
 echo >&2 + : BEGIN cif_scons_vartags.sh
 
-# function returns a string that evaluates to some local variables we use often for AJ Core processes
-#   cwd     : top of AJ Core SCons build tree (ie core/alljoyn)
-#   argv1,2,3 : OS,CPU,VARIANT : as in build/$OS/$CPU/$VARIANT/dist path, as in AJ Core SCons options OS,CPU,VARIANT
+# function returns strings that evaluate to define some local variables we use often for AJ Std Core processes
+#   cwd     : top of AJ Std Core SCons build tree (ie core/alljoyn)
+#   argv1,2,3 : OS,CPU,VARIANT : as in build/$OS/$CPU/$VARIANT/dist path, as in AJ Std Core SCons options OS,CPU,VARIANT
+#   stdout  : vartag='string' cputag='string' dist='string' test='string' obj='string'
 
 ci_scons_vartags() {
 
@@ -55,7 +56,8 @@ ci_scons_vartags() {
     local test=${PWD}/build/$_os/$_cpu/$_variant/test
     local obj=${PWD}/build/$_os/$_cpu/$_variant/obj
 
-    echo vartag=$vartag cputag=$cputag
+    echo vartag=$vartag
+    echo cputag=$cputag
     echo "dist='$dist'"
     echo "test='$test'"
     echo "obj='$obj'"
@@ -63,6 +65,74 @@ ci_scons_vartags() {
     case "$xet" in ( *x* ) set -x ;; esac
 }
 export -f ci_scons_vartags
+
+# function returns a string that evaluates to some local variables we use often for AJ Thin Core processes
+#   cwd     : top of ajtcl SCons build tree (ie core/ajtcl)
+#   argv1   : VARIANT : debug,release
+#   stdout  : _os='string' _cpu_'string' vartag='string' cputag='string' thin_dist='string'
+
+ci_thin_scons_vartags() {
+
+    : ci_thin_scons_vartags "$@"
+
+    local xet="$-"
+    case "${CI_VERBOSE}" in ( [NnFf]* ) set +x ;; ( * ) set -x ;; esac
+
+    local _variant="$1"
+
+    local _os _cpu vartag cputag
+    case "$( uname )" in
+    ( Linux )
+        _os=linux
+        _cpu=$( uname -m )
+        ;;
+    ( Darwin )
+        _os=darwin
+        _cpu=$( uname -m )
+        ;;
+    ( CYGWIN* | MINGW* )
+        _os=win7
+        case "$( uname -m )" in ( i686 | *64 ) _cpu=x86_64 ;; ( *86 ) _cpu=x86 ;; esac
+        ;;
+    ( * )
+        ci_exit 2 ci_thin_scons_vartags, trap uname="$( uname -a )"
+        ;;
+    esac
+
+    case "$_variant" in
+    ( debug )   vartag=dbg ;;
+    ( release ) vartag=rel ;;
+    ( * )       ci_exit 2 ci_thin_scons_vartags, VARIANT="$_variant" ;;
+    esac
+
+    case "$_cpu" in
+    ( *64 )     cputag=x64 ;;
+    ( *86 )     cputag=x86 ;;
+    ( arm* )    cputag=$_cpu ;;
+    ( * )       ci_exit 2 ci_thin_scons_vartags, CPU="$_cpu" ;;
+    esac
+
+    case "${GERRIT_BRANCH}" in
+    ( *reorg )
+        local thin_dist=${PWD}/dist
+        ;;
+    ( RB14.12 | RB15.04 | master )
+        local thin_dist=${PWD}
+        ;;
+    ( * )
+        local thin_dist=
+        ;;
+    esac
+
+    echo _os=$_os
+    echo _cpu=$_cpu
+    echo vartag=$vartag
+    echo cputag=$cputag
+    echo "thin_dist='$thin_dist'"
+
+    case "$xet" in ( *x* ) set -x ;; esac
+}
+export -f ci_thin_scons_vartags
 
     # end processing this file
 

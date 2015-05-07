@@ -75,13 +75,17 @@ case "${CIAJ_OS}" in
         export ANDROID_SRC=/opt/android_jellybean_georgen
         ;;
     esac
-    ci_ck_found ANDROID_SDK ANDROID_NDK ANDROID_SRC
+    export ALLJOYN_ANDROID_KEYSTORE=/opt/AllJoyn_KeyStore/AllJoyn_KeyStore
+    export ALLJOYN_ANDROID_KEYSTORE_PW=/opt/AllJoyn_KeyStore/.password
+    export ALLJOYN_ANDROID_KEYSTORE_ALIAS=AllJoyn
+    ci_ck_found ANDROID_SDK ANDROID_NDK ANDROID_SRC ALLJOYN_ANDROID_KEYSTORE ALLJOYN_ANDROID_KEYSTORE_PW
+
     export SDK_ROOT=${ANDROID_SDK}
     export PATH=$PATH:$SDK_ROOT/tools:$SDK_ROOT/platform-tools:$ANDROID_NDK
     ;;
 ( * )
     unset CIAJ_ANDROID_API_LEVEL ANDROID_API_LEVEL
-    unset ANDROID_SDK ANDROID_NDK ANDROID_SRC SDK_ROOT
+    unset ANDROID_SDK ANDROID_NDK ANDROID_SRC SDK_ROOT ALLJOYN_ANDROID_KEYSTORE ALLJOYN_ANDROID_KEYSTORE_PW
     ;;
 esac
 

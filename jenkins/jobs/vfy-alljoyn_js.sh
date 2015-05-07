@@ -47,30 +47,40 @@ case "${CIAJ_CORE_SDK}" in
     :
     : SDK for osx_ios
     :
-    export ALLJOYN_DISTDIR=${CI_SCRATCH}/${CIAJ_CORE_SDK}/build/darwin/x86/release/dist
+    _variant=release
+    _vartag=rel
+    export ALLJOYN_DISTDIR=${CI_SCRATCH}/${CIAJ_CORE_SDK}/build/darwin/x86/$_variant/dist
     ;;
 ( alljoyn-*-win7*-sdk )
     :
     : SDK for win7
     :
-    export ALLJOYN_DISTDIR=${CI_SCRATCH}/${CIAJ_CORE_SDK}/${CIAJ_CORE_SDK}-rel
+    _variant=release
+    _vartag=rel
+    export ALLJOYN_DISTDIR=${CI_SCRATCH}/${CIAJ_CORE_SDK}/${CIAJ_CORE_SDK}-$_vartag
     ;;
 ( alljoyn-*-android-sdk-dbg | alljoyn-*-android-sdk-rel )
     :
     : SDK for android
     :
+    _variant=debug
+    _vartag=dbg
     export ALLJOYN_DISTDIR=${CI_SCRATCH}/${CIAJ_CORE_SDK}/alljoyn-android/core/${CIAJ_CORE_SDK%-android-sdk-???}-${CIAJ_CORE_SDK#alljoyn-*-android-sdk-}
     ;;
 ( alljoyn-*-linux*-sdk-dbg | alljoyn-*-linux*-sdk-rel )
     :
     : SDK for linux
     :
+    _variant=release
+    _vartag=rel
     export ALLJOYN_DISTDIR=${CI_SCRATCH}/${CIAJ_CORE_SDK}
     ;;
 ( * )
     :
     : WARNING  SDK of unknown type : assume it starts at dist, and hope for the best
     :
+    _variant=release
+    _vartag=rel
     export ALLJOYN_DISTDIR=${CI_SCRATCH}/${CIAJ_CORE_SDK}
     ;;
 esac
@@ -80,12 +90,22 @@ case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) ci_showfs ;; esac
 echo >&2 + : STATUS preamble ok
 set -x
 
+case "${CI_VERBOSE}" in ( [NnFf]* ) _verbose=0 ;; ( * ) _verbose=1 ;; esac
 case "$( uname )" in
 ( Linux )
     _uncrustify=$( uncrustify --version ) || : ok
     case "$_uncrustify" in
     ( uncrustify* )
         case "${GERRIT_BRANCH}/$_uncrustify" in
+        ( *reorg/uncrustify\ 0.61* )
+            _ws=off
+            :
+            : WARNING $ci_job, found "$_uncrustify", have alljoyn branch="${GERRIT_BRANCH}" : skipping Whitespace scan
+            :
+            ;;
+        ( *reorg/uncrustify\ 0.57* )
+            _ws=detail
+            ;;
         ( */uncrustify\ 0.61* )
             _ws=detail
             ;;
@@ -139,7 +159,7 @@ for p in core/ajtcl services/base_tcl services/base ; do
     esac
 
     pushd alljoyn/$p
-        case "$r" in ( "" ) ;; ( * ) git checkout "$r" || : WARNING, "$r not found $p.git, using master." ;; esac
+        case "$r" in ( "" ) ;; ( * ) git checkout "$r" || : WARNING "$r not found $p.git, using master." ;; esac
         git log -1
         ci_showfs
     popd
@@ -155,11 +175,10 @@ cat alljoyn/manifest.txt
 : START extra Libs
 :
 
-cd "${CI_SCRATCH}"
-
 :
 : DUKTAPE
 :
+cd "${CI_WORK}"
 rm -rf "${CIAJ_DUKTAPE}"
 ci_unzip "${CIAJ_DUKTAPE_ZIP}"
 
@@ -168,6 +187,7 @@ ci_showfs "${CIAJ_DUKTAPE}"
 :
 : CIAJ_CORE_SDK
 :
+cd "${CI_SCRATCH}"
 rm -rf "${CIAJ_CORE_SDK}"
 ci_unzip "${CIAJ_CORE_SDK_ZIP}"
 
@@ -176,26 +196,51 @@ ci_showfs "${ALLJOYN_DISTDIR}"
 
 cd "${WORKSPACE}"
 
-case "${CI_VERBOSE}" in ( [NnFf]* ) verbose=0 ;; ( * ) verbose=1 ;; esac
-
 :
 : START build ajtcl
 :
 
 pushd alljoyn/core/ajtcl
-    ci_scons WS=off VARIANT=release ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+    ci_scons V=$_verbose WS=off VARIANT=$_variant ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
     ci_showfs
 popd
+
+if ls -ld alljoyn/services/base_tcl/SConstruct
+then
+    :
+    : START build base_tcl
+    :
+    pushd alljoyn/services/base_tcl
+        ci_scons V=$_verbose WS=off EXCLUDE_ONBOARDING=yes VARIANT=$_variant ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+        ci_showfs
+    popd
+else
+    :
+    : WARNING no SConstruct in base_tcl / "${CIAJ_CORE_GITREV}"
+    :
+fi
+
 
 :
 : START build alljoyn-js
 :
 
 cd "${WORKSPACE}"
+case "${GERRIT_BRANCH}" in  ### FIXME
+( *reorg )
+    duktape_envname=DUKTAPE_SRC
+    duktape_distsrc=$( ci_natpath "${CI_WORK}/${CIAJ_DUKTAPE}/src" )
+    ;;
+( * )
+    duktape_envname=DUKTAPE_DIST
+    duktape_distsrc=$( ci_natpath "${CI_WORK}/${CIAJ_DUKTAPE}" )
+    ;;
+esac
+
 pushd alljoyn/core/alljoyn-js
     (
-        export ALLJOYN_DISTDIR="$( ci_natpath "$ALLJOYN_DISTDIR" )"
-        ci_scons WS=$_ws VARIANT=release DUKTAPE_DIST="$( ci_natpath "${CI_SCRATCH}/${CIAJ_DUKTAPE}" )" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+        export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
+        ci_scons V=$_verbose WS=$_ws VARIANT=$_variant $duktape_envname="$duktape_distsrc" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
     )
     ci_showfs
 
@@ -204,10 +249,54 @@ pushd alljoyn/core/alljoyn-js
     :
     cd console
     (
-        export ALLJOYN_DISTDIR="$( ci_natpath "$ALLJOYN_DISTDIR" )"
-        ci_scons WS=$_ws VARIANT=release ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+        export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
+        ci_scons V=$_verbose WS=$_ws VARIANT=$_variant ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
     )
     ci_showfs
+
+    case "${GERRIT_BRANCH}" in
+    ( *reorg )
+        :
+        : WARNING python debugging console not implemented
+        :
+        ;;
+    ( * )
+        case "${CIAJ_CORE_SDK}" in
+        ( alljoyn-*-win7*-sdk )
+            :
+            : WARNING python debugging console not implemented
+            :
+            # FIXME - setup.py should accept ALLJOYN_DISTDIR variable instead of this symlink
+            # rm -f    ../../alljoyn/build/win7/x86_64/release/dist
+            # mkdir -p ../../alljoyn/build/win7/x86_64/release
+            # cmd ${CI_SLASH_1_2}C mklink ${CI_SLASH_1_2}D "$( ci_natpath ../../alljoyn/build/win7/x86_64/release/dist )" "$( ci_natpath "$ALLJOYN_DISTDIR" )"
+            # FIXME - build fails on Jenkins Windows build slave
+            # (
+                # export VS90COMNTOOLS=$VS120COMNTOOLS
+                # export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
+                # python setup.py build
+            # )
+            # rm -f    ../../alljoyn/build/win7/x86_64/release/dist
+            ;;
+        ( alljoyn-*-linux*-sdk-dbg | alljoyn-*-linux*-sdk-rel )
+            :
+            : START python debugging console
+            :
+            # FIXME - setup.py should accept ALLJOYN_DISTDIR variable instead of this symlink
+            rm -f    ../../alljoyn/build/linux/x86_64/debug/dist
+            mkdir -p ../../alljoyn/build/linux/x86_64/debug
+            ln -s "$ALLJOYN_DISTDIR" ../../alljoyn/build/linux/x86_64/debug/dist
+            python setup.py build
+            rm -f    ../../alljoyn/build/linux/x86_64/debug/dist
+            ;;
+        ( * )
+            :
+            : WARNING python debugging console not implemented
+            :
+            ;;
+        esac
+        ;;
+    esac
 popd
 
 :
@@ -216,8 +305,8 @@ popd
 
 cd "${WORKSPACE}"
 
-zip=${CI_ARTIFACT_NAME}
-work=${CI_ARTIFACTS_WORK}/$zip
+zip=${CI_ARTIFACT_NAME}-$_vartag
+work=${CI_ARTIFACTS_SCRATCH}/$zip
 to=${CI_ARTIFACTS}/$zip.zip
 
 rm -rf "$work" "$to"    || : error ignored
@@ -239,12 +328,25 @@ case "${CIAJ_CORE_SDK}" in
     :
     mkdir "$work/lib"
 
+    case "${GERRIT_BRANCH}" in
+    ( *reorg )
+        :
+        : WARNING python debugging console not implemented
+        :
+        ;;
+    ( * )
+        pushd alljoyn/core/alljoyn-js/console/build
+            cp lib*/AJSConsole.so "$work/lib"
+        popd
+        ;;
+    esac
+
     pushd "${ALLJOYN_DISTDIR}"
         for i in about/lib/liballjoyn_about.so cpp/lib/liballjoyn.so ; do
             cp -p $i "$work/lib" || : not fatal yet
         done
         pushd "$work/lib"
-            ls -l liballjoyn* || ci_exit 2 $ci_job, "liballjoyn* (shared libs) not found in AJ Core Std SDK"
+            ls -l liballjoyn* || ci_exit 2 $ci_job, "liballjoyn* (shared libs) not found in AJ Std Core SDK"
         popd
     popd
     ;;

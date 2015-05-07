@@ -46,6 +46,15 @@ ci_core_junits() {
     local vartag cputag dist test obj
     eval $( ci_scons_vartags "$@" )
 
+    case "$_os" in
+    ( android )
+        : no-op for $_os
+        date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
+        case "$xet" in ( *x* ) set -x ;; ( * ) set +x ;; esac
+        return $xit
+        ;;
+    esac
+
     local ready_daemon start_daemon ready_address _bus_address daemon_bin daemon_options daemon_pid daemon_exe
 
         # fake HOME and TMPDIR should have been done by now, in ci_setenv preamble. better safe than sorry.
@@ -141,8 +150,9 @@ EoF
 
         : clean fake home and tmp directories before junit
 
-    rm -rf "${WORKSPACE}/home"/* "${WORKSPACE}/tmp"/* || : ok
+    rm -rf "${WORKSPACE}/home" "${WORKSPACE}/tmp" || : ok
         # because rm -rf $HOME/* just feels too dangerous
+    mkdir  "${WORKSPACE}/home" "${WORKSPACE}/tmp"
 
     pushd "$test/junit"
 
@@ -253,13 +263,21 @@ ci_core_ready_junits() {
     local vartag cputag dist test obj
     eval $( ci_scons_vartags "$@" )
 
+    case "$_os" in
+    ( android )
+        : no-op for $_os
+        date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
+        case "$xet" in ( *x* ) set -x ;; ( * ) set +x ;; esac
+        return $xit
+        ;;
+    esac
+
     rm -rf   "$test/junit"
     mkdir -p "$test/junit" || : ok
     cp -p build.xml "$test/junit"
     pushd "$obj/alljoyn_java"
         cp -rp test "$test/junit"
     popd
-
 
     date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
     case "$xet" in ( *x* ) set -x ;; ( * ) set +x ;; esac

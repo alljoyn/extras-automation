@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<project name="Thin Client SDK for Windows" default="zip" >
+<project name="Thin Core SDK for Windows" default="zip" >
 
     <!-- properties -->
 

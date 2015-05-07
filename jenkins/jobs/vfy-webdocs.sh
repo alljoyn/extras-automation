@@ -13,56 +13,46 @@
 #    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-# Klocwork Analysis for AllJoyn Thin Core on any Xyzcity platform
+# Gerrit-verify build for AllJoyn Thin Core on any platform
+
+    # FIXME 2015-02-05: Linux build should load up a daemon router,
+    #       but the BusAttach test case was disabled in buildbot for some reason,
+    #       so we do not need a daemon yet, so that code is deactivated
 
 set -e +x
-ci_job=xyz/kw-ajtcl.sh
+ci_job=vfy-webdocs.sh
 ci_job_xit=0
 echo >&2 + : BEGIN $ci_job
 echo >&2 + : START preamble
 source "${CI_NODESCRIPTS_PART}.sh"
 
-source "${CI_COMMON}/${CI_SITE}/cif_kwbuild.sh"
-
 case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) ci_showfs ;; esac
 echo >&2 + : STATUS preamble ok
 set -x
+
 
 :
 :
 cd "${WORKSPACE}"
 
-ci_genversion alljoyn/core/ajtcl ${GERRIT_BRANCH}  >  alljoyn/manifest.txt
-cp alljoyn/manifest.txt artifacts
+ci_genversion webdocs ${GERRIT_BRANCH}  >  artifacts/manifest.txt
 
 : INFO manifest
 
-cat alljoyn/manifest.txt
+cat artifacts/manifest.txt
 
 :
-: START kwinject
+: START webdocs
 :
-rm -rf "${CI_WORK}/klocwork"
-mkdir -p "${CI_WORK}/klocwork/build"
-mkdir -p "${CI_WORK}/klocwork/tables"
 
-pushd alljoyn/core/ajtcl
-    ci_kwinject --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
-        scons WS=off VARIANT=debug \
-        GTEST_DIR="$( ci_natpath "$GTEST_DIR" )" \
-        ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
-    ci_showfs
+pushd webdocs/scripts
+    npm install
+    cd ..
+    node scripts/generate_docs.js
+    node scripts/linkchecker.js || : ok
 popd
 
-ls -la "${CI_WORK}/klocwork/build"
 
-pushd "${CI_WORK}/klocwork/tables"
-    ci_kwbuild ../build/spec.kw
-    cp build.log "${CI_ARTIFACTS}/klocwork_build.log"
-popd
-
-:
-:
 set +x
 echo >&2 + : STATUS $ci_job exit $ci_job_xit
 exit "$ci_job_xit"

@@ -13,7 +13,7 @@
 #    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-# Full build for AllJoyn Core (Std) on all platforms except OSX
+# Full build for AllJoyn Std Core on all platforms except OSX
 
 set -e +x
 ci_job=full-alljoyn_core.sh
@@ -24,15 +24,7 @@ source "${CI_NODESCRIPTS_PART}.sh"
 
 source "${CI_COMMON}/cif_scons_vartags.sh"
 source "${CI_COMMON}/cif_core_sconsbuilds.sh"
-
-case "${CIAJ_OS}" in
-( linux | win7 )
-    source "${CI_COMMON}/cif_core_junits.sh"
-    ;;
-( android )
-    : android SDK, test : NOT YET
-    ;;
-esac
+source "${CI_COMMON}/cif_core_junits.sh"
 
 ci_savenv
 case "${CI_VERBOSE}" in ( [NnFf]* ) _verbose= ;; ( * ) _verbose=-verbose ; ci_showfs ;; esac
@@ -74,10 +66,10 @@ case "${CIAJ_OS}" in
     :
     date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
     ant -f "$( ci_natpath "${CI_COMMON}/build-win7.xml" )" $_verbose -Dscons.cpu="${CIAJ_CPU}" -Dscons.msvc="${CIAJ_MSVC_VERSION%%.*}" \
-        -DsdkWork="$( ci_natpath "${CI_ARTIFACTS_WORK}" )" -DsconsDir="$( ci_natpath "${WORKSPACE}/alljoyn/core/alljoyn" )" -DsdkName="${CI_ARTIFACT_NAME}-sdk"
-    mv -f "${CI_ARTIFACTS_WORK}/${CI_ARTIFACT_NAME}-sdk.zip" "${CI_ARTIFACTS}"
+        -DsdkWork="$( ci_natpath "${CI_ARTIFACTS_SCRATCH}" )" -DsconsDir="$( ci_natpath "${WORKSPACE}/alljoyn/core/alljoyn" )" -DsdkName="${CI_ARTIFACT_NAME}-sdk"
+    mv -f "${CI_ARTIFACTS_SCRATCH}/${CI_ARTIFACT_NAME}-sdk.zip" "${CI_ARTIFACTS}"
     ;;
-( linux )
+( linux | android )
     for _variant in debug release
     do
         pushd alljoyn/core/alljoyn
@@ -87,9 +79,19 @@ case "${CIAJ_OS}" in
         : START SDK $_variant
         :
         date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
-        ant -f "${CI_COMMON}/build-linux.xml" $_verbose -Dscons.cpu="${CIAJ_CPU}" -Dscons.variant=$_variant \
-            -DsdkWork="${CI_ARTIFACTS_WORK}" -DsconsDir="${WORKSPACE}/alljoyn/core/alljoyn" -DsdkName="${CI_ARTIFACT_NAME}-sdk-$vartag"
-        mv -f "${CI_ARTIFACTS_WORK}/${CI_ARTIFACT_NAME}-sdk-$vartag.zip" "${CI_ARTIFACTS}"
+        case "${CIAJ_OS}" in
+        ( linux )
+            ant -f "${CI_COMMON}/build-linux.xml" $_verbose -Dscons.cpu="${CIAJ_CPU}" -Dscons.variant=$_variant \
+                -DsdkWork="${CI_ARTIFACTS_SCRATCH}" -DsconsDir="${WORKSPACE}/alljoyn/core/alljoyn" -DsdkName="${CI_ARTIFACT_NAME}-sdk-$vartag"
+            ;;
+        ( android )
+            ant -f "${CI_COMMON}/build-android.xml" $_verbose -Dscons.cpu="${CIAJ_CPU}" -Dscons.variant=$_variant \
+                -DANDROID_SDK="${ANDROID_SDK}" -DANDROID_NDK="${ANDROID_NDK}" -DANDROID_SRC="${ANDROID_SRC}" \
+                -DALLJOYN_KEYSTORE.keystore="${ALLJOYN_ANDROID_KEYSTORE}" -DALLJOYN_KEYSTORE.password="${ALLJOYN_ANDROID_KEYSTORE_PW}"  -DALLJOYN_KEYSTORE.alias="${ALLJOYN_ANDROID_KEYSTORE_ALIAS}" \
+                -DsdkWork="${CI_ARTIFACTS_SCRATCH}" -DsconsDir="${WORKSPACE}/alljoyn/core/alljoyn" -DsdkName="${CI_ARTIFACT_NAME}-sdk-$vartag"
+            ;;
+        esac
+        mv -f "${CI_ARTIFACTS_SCRATCH}/${CI_ARTIFACT_NAME}-sdk-$vartag.zip" "${CI_ARTIFACTS}"
     done
     ;;
 ( android )
@@ -207,7 +209,7 @@ do
             :
             : test_tools.zip $_variant
             :
-            ci_zip_simple_artifact "$PWD" "${CI_ARTIFACT_NAME}-test_tools-$vartag" || {
+            ci_zip_simple_artifact "$PWD" "${CI_ARTIFACT_NAME}-tools-$vartag" || {
                 :
                 : UNSTABLE $ci_job, test_tools $_variant
                 :

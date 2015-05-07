@@ -106,6 +106,96 @@ ci_ck_found() {
 }
 export -f ci_ck_found       # ck given path is found
 
+ci_upsetenv() {
+
+    local _xet="$-"
+    set +x
+
+    echo >&2 + : ci_upsetenv "$@"
+
+    local up
+    case "$1" in ( [1-9] ) up=$1 ;; ( * ) up=1 ;; esac
+
+    export CI_UP${up}="${CI_SCRATCH}/up${up}/artifacts"
+
+    ls -dl "${CI_UP1}/env/setenv.sh" || ci_exit 2 ci_upsetenv, upstream $up artifact env/setenv.sh not found
+
+    mkdir -p "${WORKSPACE}/work" || : ok
+    rm -f "${WORKSPACE}/work/ci_upsetenv.awk" "${WORKSPACE}/work/ci_upsetenv.txt"
+
+    cat << \EoF > "${WORKSPACE}/work/ci_upsetenv.awk"
+    # q == 0 means remember these variables names, do not write
+    # q != 0 means rewrite as "_UP1" variables
+    # p != 0 means write continuation line(s) if any
+
+    # if line does not start with "declare -" then it is a continuation line
+
+$0 ~ "^EoS$"    { q=1; next; }
+
+$1 " " $2 !~ /^declare -[^ ]+$/     {
+        if( p+0 != 0 && q+0 != 0 ) print; next
+    }
+
+    # all lines after this look like "declare -x name=value"
+
+    {
+        p=0; v=$3 ""; sub( "=.*", "", v ); l=length( v ); u=toupper( v )
+    }
+
+    # ignore variable if name less than 3 chars long
+
+l+0 < 3     { next; }
+
+    # ignore variable if name does not start with letter
+
+u "" ~ /^[^A-Z]/    { next; }
+
+    # ignore these
+
+u "" ~ /^CIF*_.*XET$/   { next; }
+u "" ~ /^CIF*_.*ENV$/   { next; }
+
+    # remember selected variable names
+
+q+0 == 0 && v "" ~ /^(CIAJ|GIT|GERRIT)_/ && v "" !~ /_UP[1-9]$/     {
+        q0v[ v "" ] = 1
+    }
+q+0 != 0 && v "" ~ /^(CIAJ|GIT|GERRIT)_/ && v "" !~ /_UP[1-9]$/     {
+        q1v[ v "" ] = 1
+    }
+
+    # only q==1 after this
+
+q+0 == 0    { next; }
+
+    # for selected variables, write $0 with "_UP1" added to variable name
+
+u "" ~ /^(CI[A-Z]*|BUILD|HUDSON|JENKINS|JOB|NODE|GIT|GERRIT)_/ && u "" !~ /_UP[1-9]$/      {
+        sub( "^declare -[^ ]+", "export" ) ; sub( "=", "_UP" up "=" ) ; p=1; print; next
+    }
+u "" ~ /^(DESCRIPTION_SETTER_DESCRIPTION|SERVICE_ID)$/                              {
+        sub( "^declare -[^ ]+", "export" ) ; sub( "=", "_UP" up "=" ) ; p=1; print; next
+    }
+
+END {
+        # carry selected variables from upstream job into downstream job
+        for ( v in q1v ) {
+            if ( q0v[ v "" ]+0 == 0 ) {
+                vup=v ; sub( "$", "_UP" up, vup ) ; print "export " v "=$" vup ;
+            }
+        }
+    }
+EoF
+    ci_declare_env > "${WORKSPACE}/work/ci_upsetenv.txt"
+    echo "EoS" | cat -- "${WORKSPACE}/work/ci_upsetenv.txt" - "${CI_UP1}/env/setenv.sh" | \
+        awk > "${CI_ARTIFACTS}/env/up${up}setenv.sh" -v up=$up -f "${WORKSPACE}/work/ci_upsetenv.awk"
+
+    ls -dl "${CI_ARTIFACTS}/env/up${up}setenv.sh"
+
+    case "$_xet" in ( *x* ) set -x ;; esac
+}
+export -f ci_upsetenv       # stdin-stdout filter, selects variables for downstream job from upstream jobs setenv.sh file
+
 ci_zip_simple_artifact() {
     local _xet="$-"
     case "${CI_VERBOSE}" in ( [NnFf]* ) set +x ;; ( * ) set -x ;; esac
@@ -134,7 +224,7 @@ ci_zip_simple_artifact() {
     ( /* )  ci_exit 2 ci_zip_simple_artifact, "argv3=$1 is not allowed" ;;
     esac
 
-    work=${CI_ARTIFACTS_WORK}/$zip
+    work=${CI_ARTIFACTS_SCRATCH}/$zip
     to=${CI_ARTIFACTS}/$zip.zip
 
     rm -rf "$work" "$to"    || : error ignored
@@ -167,6 +257,10 @@ case "${CI_SHELL_W}" in
 
     ci_natpath() {          # dummy path conversion
         echo "$@"
+    }
+
+    ci_mv() {               # dummy mv -f
+        mv -f "$@"
     }
 
     ci_genversion() {       # run genversion.py with parameters
@@ -252,6 +346,34 @@ case "${CI_SHELL_W}" in
         case "$_xet" in ( *x* ) set -x ;; esac
     }
 
+    ci_mv() {               # ci_mv implements mv -f with workarounds for balky Windows/Cygwin file systems
+        local _xet="$-"
+        set +x
+
+        case $# in
+        ( 2 )
+            case "$1" in ( "" ) ci_exit 2 argv1 not found, ci_mv "$@" ;; esac
+            case "$2" in ( "" ) ci_exit 2 argv2 not found, ci_mv "$@" ;; esac
+            ;;
+        ( * )
+            ci_exit 2 exactly 2 arguments, ci_mv "$@"
+            ;;
+        esac
+
+        local i
+        ls -d "$1" > /dev/null || ci_exit 2 ci_mv "$1" not found
+        if ls -d "$2" > /dev/null 2>&1
+        then
+            for i in 1 2 3 4 5; do ls -d "$2" > /dev/null 2>&1 || break && rm -rf "$2" || sleep 2; done
+            ls -d "$2" 2> /dev/null && ci_exit 2 ci_mv, failed rm -rf "$2"
+        fi
+
+        for i in 1 2 3 4 5; do ls -d "$2" > /dev/null 2>&1 && break || mv -f "$1" "$2" || sleep 2; done
+        ls -d "$2" > /dev/null || ci_exit 2 ci_mv, failed mv "$1" "$2"
+
+        case "$_xet" in ( *x* ) set -x ;; esac
+    }
+
     ci_genversion() {           # run genversion.py with parameters
         # argv1= path to git workspace; argv2= git branch, optional: default is branch seen in git workspace
         python "$( ci_natpath "${CI_GENVERSION_PY}" )" "$( ci_natpath "$1" )" $2
@@ -270,7 +392,7 @@ case "${CI_SHELL_W}" in
         local path_to_gtestfile=$( ci_natpath "${4:-.}" )
         case "$xet" in ( *x* ) set -x ;; esac
         :
-        : START test_harness "$@"
+        : START test_harness $vartag "$@"
         :
         time python "$test_harness" -c "$config_file" -t $1 -p "$path_to_gtestfile" < /dev/null | tee "$3"
         tail -10 "$3" | grep -q "exiting with status 0" || {
@@ -303,15 +425,15 @@ case "${CI_SHELL_W}" in
 
         local minusk
         case "${CI_KEEPGOING}" in ( "" | [NnFf]* ) minusk="" ;; ( * ) minusk=-k ;; esac
-        cp "${CI_SCRATCH}/ci_setenv.bat" "${CI_SCRATCH}/ci_scons.bat"
+        cp "${CI_WORK}/ci_setenv.bat" "${CI_WORK}/ci_scons.bat"
         (
             echo "@echo on"
             case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) echo set ;; esac
             echo call scons "$@" $minusk
-        ) | sed -e 's,$,\r,' >> "${CI_SCRATCH}/ci_scons.bat"
+        ) | sed -e 's,$,\r,' >> "${CI_WORK}/ci_scons.bat"
 
         case "$_xet" in ( *x* ) set -x ;; esac
-        cmd.exe ${CI_SLASH_1_2}C "$( ci_natpath "${CI_SCRATCH}/ci_scons.bat" )"
+        cmd.exe ${CI_SLASH_1_2}C "$( ci_natpath "${CI_WORK}/ci_scons.bat" )"
     }
 
     if type zip.exe

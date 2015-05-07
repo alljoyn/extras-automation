@@ -35,11 +35,11 @@ export CIAJ_CORE_SDK=$_t
 eval _t="${CIAJ_DUKTAPE}"
 export CIAJ_DUKTAPE=$_t
 
-export CIAJ_DUKTAPE_ZIP=${CISEA_SHOPT}/common/${CIAJ_DUKTAPE}.zip
-export CIAJ_CORE_SDK_ZIP=$( find "${CISEA_SDK}" -type f -name "${CIAJ_CORE_SDK}.zip" )
+export CIAJ_DUKTAPE_ZIP=${CIXYZ_SHOPT}/common/${CIAJ_DUKTAPE}.zip
+export CIAJ_CORE_SDK_ZIP=$( find "${CIXYZ_SDK}" -type f -name "${CIAJ_CORE_SDK}.zip" )
 
 ci_ck_found CIAJ_DUKTAPE_ZIP || ci_exit 2 $ci_job, CIAJ_DUKTAPE_ZIP="${CIAJ_DUKTAPE_ZIP}" not found
-ci_ck_found CIAJ_CORE_SDK_ZIP || ci_exit 2 $ci_job, CIAJ_CORE_SDK_ZIP="${CISEA_SDK}/**/${CIAJ_CORE_SDK}.zip" not found
+ci_ck_found CIAJ_CORE_SDK_ZIP || ci_exit 2 $ci_job, CIAJ_CORE_SDK_ZIP="${CIXYZ_SDK}/**/${CIAJ_CORE_SDK}.zip" not found
 
 :
 : set ALLJOYN_DISTDIR according to type of CIAJ_CORE_SDK=${CIAJ_CORE_SDK}
@@ -111,7 +111,7 @@ for p in core/ajtcl services/base_tcl services/base ; do
     esac
 
     pushd alljoyn/$p
-        case "$r" in ( "" ) ;; ( * ) git checkout "$r" || : WARNING, "$r not found $p.git, using master." ;; esac
+        case "$r" in ( "" ) ;; ( * ) git checkout "$r" || : WARNING "$r not found $p.git, using master." ;; esac
         git log -1
         ci_showfs
     popd
@@ -127,11 +127,10 @@ cat alljoyn/manifest.txt
 : START extra Libs
 :
 
-cd "${CI_SCRATCH}"
-
 :
 : DUKTAPE
 :
+cd "${CI_WORK}"
 rm -rf "${CIAJ_DUKTAPE}"
 ci_unzip "${CIAJ_DUKTAPE_ZIP}"
 
@@ -140,6 +139,7 @@ ci_showfs "${CIAJ_DUKTAPE}"
 :
 : CIAJ_CORE_SDK
 :
+cd "${CI_SCRATCH}"
 rm -rf "${CIAJ_CORE_SDK}"
 ci_unzip "${CIAJ_CORE_SDK_ZIP}"
 
@@ -153,14 +153,14 @@ case "${CI_VERBOSE}" in ( [NnFf]* ) verbose=0 ;; ( * ) verbose=1 ;; esac
 :
 : START kwinject ajtcl
 :
-rm -rf "${CI_SCRATCH}/klocwork"
-mkdir -p "${CI_SCRATCH}/klocwork/build"
-mkdir -p "${CI_SCRATCH}/klocwork/tables"
+rm -rf "${CI_WORK}/klocwork"
+mkdir -p "${CI_WORK}/klocwork/build"
+mkdir -p "${CI_WORK}/klocwork/tables"
 
 pushd alljoyn/core/ajtcl
     (
         unset GTEST_DIR
-        ci_kwinject --output "$( ci_natpath "${CI_SCRATCH}/klocwork/build/spec.kw" )" \
+        ci_kwinject --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
             scons WS=off VARIANT=release \
             ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
     )
@@ -174,10 +174,10 @@ popd
 cd "${WORKSPACE}"
 pushd alljoyn/core/alljoyn-js
     (
-        export ALLJOYN_DISTDIR="$( ci_natpath "$ALLJOYN_DISTDIR" )"
-        ci_kwinject --update --output "$( ci_natpath "${CI_SCRATCH}/klocwork/build/spec.kw" )" \
+        export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
+        ci_kwinject --update --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
             scons WS=off VARIANT=release \
-            DUKTAPE_DIST="$( ci_natpath "${CI_SCRATCH}/${CIAJ_DUKTAPE}" )" \
+            DUKTAPE_DIST="$( ci_natpath "${CI_WORK}/${CIAJ_DUKTAPE}" )" \
             ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
     )
     ci_showfs
@@ -187,17 +187,17 @@ pushd alljoyn/core/alljoyn-js
     :
     cd console
     (
-        export ALLJOYN_DISTDIR="$( ci_natpath "$ALLJOYN_DISTDIR" )"
-        ci_kwinject --update --output "$( ci_natpath "${CI_SCRATCH}/klocwork/build/spec.kw" )" \
+        export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
+        ci_kwinject --update --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
             scons WS=off VARIANT=release \
             ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
     )
     ci_showfs
 popd
 
-ls -la "${CI_SCRATCH}/klocwork/build"
+ls -la "${CI_WORK}/klocwork/build"
 
-pushd "${CI_SCRATCH}/klocwork/tables"
+pushd "${CI_WORK}/klocwork/tables"
     ci_kwbuild ../build/spec.kw
     cp build.log "${CI_ARTIFACTS}/klocwork_build.log"
 popd

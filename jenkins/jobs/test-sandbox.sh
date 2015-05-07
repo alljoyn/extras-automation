@@ -13,16 +13,23 @@
 #    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-# Klocwork Analysis for AllJoyn Thin Core on any Xyzcity platform
+# "Sandbox-test" build for prototyping Jenkins builds within the AllJoyn CI framework. 
+# Derived from vfy-ajtcl-u1404.
 
 set -e +x
-ci_job=xyz/kw-ajtcl.sh
+ci_job=sandbox-test.sh
 ci_job_xit=0
 echo >&2 + : BEGIN $ci_job
 echo >&2 + : START preamble
 source "${CI_NODESCRIPTS_PART}.sh"
 
-source "${CI_COMMON}/${CI_SITE}/cif_kwbuild.sh"
+: get upstream build environment
+
+ci_upsetenv 1
+echo >&2 + : source up1setenv.sh
+    # the following source, ci_savenv ops are standard for downstream jobs, but cannot be pushed into a function
+source "${CI_ARTIFACTS}/env/up1setenv.sh"
+ci_savenv
 
 case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) ci_showfs ;; esac
 echo >&2 + : STATUS preamble ok
@@ -32,37 +39,30 @@ set -x
 :
 cd "${WORKSPACE}"
 
-ci_genversion alljoyn/core/ajtcl ${GERRIT_BRANCH}  >  alljoyn/manifest.txt
-cp alljoyn/manifest.txt artifacts
+:
+: START get upstream artifact
+:
 
-: INFO manifest
-
-cat alljoyn/manifest.txt
+up1_zip=$( cd "${CI_UP1}" && ls -d "${CI_ARTIFACT_NAME_UP1}"*-dbg.zip | head -1 )
+case "$up1_zip" in ( "" ) ci_exit 2 $ci_job, upstream 1 artifact "${CI_ARTIFACT_NAME_UP1}*-dbg.zip" not found ;; esac 
+ci_unzip "${CI_UP1}/$up1_zip"
+ci_mv ${up1_zip%.zip} alljoyn   # workaround for Windows/Cygwin
+ci_showfs alljoyn
 
 :
-: START kwinject
+: START ajtcltest dbg
 :
-rm -rf "${CI_WORK}/klocwork"
-mkdir -p "${CI_WORK}/klocwork/build"
-mkdir -p "${CI_WORK}/klocwork/tables"
+
+    # FIXME : tests should run a stand-alone alljoyn-daemon (Linux) or sample router (Windows), but they don't do either
+
+source "${CI_COMMON}/cif_scons_vartags.sh"
+source "${CI_COMMON}/cif_core_gtests.sh"
 
 pushd alljoyn/core/ajtcl
-    ci_kwinject --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
-        scons WS=off VARIANT=debug \
-        GTEST_DIR="$( ci_natpath "$GTEST_DIR" )" \
-        ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
-    ci_showfs
+    eval $( ci_thin_scons_vartags debug )
+    ci_core_gtests $_os $_cpu debug on ajtcl
 popd
 
-ls -la "${CI_WORK}/klocwork/build"
-
-pushd "${CI_WORK}/klocwork/tables"
-    ci_kwbuild ../build/spec.kw
-    cp build.log "${CI_ARTIFACTS}/klocwork_build.log"
-popd
-
-:
-:
 set +x
 echo >&2 + : STATUS $ci_job exit $ci_job_xit
 exit "$ci_job_xit"

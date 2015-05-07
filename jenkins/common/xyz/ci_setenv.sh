@@ -85,20 +85,20 @@ case "${CI_SHELL_W}" in
     ci_kwinject() {            # run kwinject via cmd shell and setenv.bat
         local _xet="$-"
         case "${CI_VERBOSE}" in ( [NnFf]* ) set +x ;; esac
-        cp "${CI_SCRATCH}/ci_setenv.bat" "${CI_SCRATCH}/ci_kwinject.bat"
+        cp "${CI_WORK}/ci_setenv.bat" "${CI_WORK}/ci_kwinject.bat"
         (
             echo "@echo on"
             case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) echo set ;; esac
             echo kwinject "$@"
-        ) | sed -e 's,$,\r,' >> "${CI_SCRATCH}/ci_kwinject.bat"
+        ) | sed -e 's,$,\r,' >> "${CI_WORK}/ci_kwinject.bat"
         case "$_xet" in ( *x* ) set -x ;; esac
-        cmd.exe ${CI_SLASH_1_2}C "$( ci_natpath "${CI_SCRATCH}/ci_kwinject.bat" )"
+        cmd.exe ${CI_SLASH_1_2}C "$( ci_natpath "${CI_WORK}/ci_kwinject.bat" )"
     }
 
     ci_iarbuild() {            # run iarbuild via cmd shell and setenv.bat
         local _xet="$-"
         case "${CI_VERBOSE}" in ( [NnFf]* ) set +x ;; esac
-        cp "${CI_SCRATCH}/ci_setenv.bat" "${CI_SCRATCH}/ci_iarbuild.bat"
+        cp "${CI_WORK}/ci_setenv.bat" "${CI_WORK}/ci_iarbuild.bat"
         (
             echo set HOME="$( ci_natpath "${CI_FORCE_HOME}" )"
             echo set HOMEDRIVE="${CI_FORCE_HOMEDRIVE}"
@@ -108,9 +108,9 @@ case "${CI_SHELL_W}" in
             echo "@echo on"
             case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) echo set ;; esac
             echo "$( ci_natpath "$IARBUILD" )" "$@"
-        ) | sed -e 's,$,\r,' >> "${CI_SCRATCH}/ci_iarbuild.bat"
+        ) | sed -e 's,$,\r,' >> "${CI_WORK}/ci_iarbuild.bat"
         case "$_xet" in ( *x* ) set -x ;; esac
-        cmd.exe ${CI_SLASH_1_2}C "$( ci_natpath "${CI_SCRATCH}/ci_iarbuild.bat" )"
+        cmd.exe ${CI_SLASH_1_2}C "$( ci_natpath "${CI_WORK}/ci_iarbuild.bat" )"
     }
     ;;
 
@@ -125,11 +125,6 @@ export -f ci_iarbuild       # iarbuild
 # TEST_TOOLS is probably going to change, anyway
 ci_ck_partpath CIXYZ_TEST_TOOLS_PART
 export CIXYZ_TEST_TOOLS=${WORKSPACE}/${CIXYZ_TEST_TOOLS_PART}
-
-# test_harness should be in common, but it is not.
-#   until it is, assume CI_SITE=asa has defined an equivalent
-export CI_TEST_HARNESS_PY=${CI_COMMON}/xyz/test_harness.py
-ci_ck_found CI_TEST_HARNESS_PY
 
 
         # end processing this file

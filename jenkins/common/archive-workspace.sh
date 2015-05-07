@@ -13,7 +13,7 @@
 #    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-# archives the entire workspace on any platform, except for "artifacts"
+# archives the entire workspace on any platform, except for "artifacts" and "scratch"
 
 : force Verbose=False
 export CI_VERBOSE=False
@@ -41,7 +41,7 @@ case "${BUILD_TAG}" in
 
     _list=$(
         set +x
-        ls -1a | grep -iv -e '^artifacts$' -e '^\.$' -e '^\.\.$' | while read -r f
+        ls -1a | grep -iv -e '^artifacts$' -e '^scratch$' -e '^\.$' -e '^\.\.$' | while read -r f
         do
             echo "'$f'"
         done

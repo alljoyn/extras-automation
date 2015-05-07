@@ -13,7 +13,7 @@
 #    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-# Klocwork Analysis for AllJoyn Core (Std) on any Xyzcity platform
+# Klocwork Analysis for AllJoyn Std Core on any Xyzcity platform
 # (except OSX which we do not support with Klocwork anyway)
 
 set -e +x
@@ -72,12 +72,12 @@ cat alljoyn/manifest.txt
 :
 : START kwinject
 :
-rm -rf "${CI_SCRATCH}/klocwork"
-mkdir -p "${CI_SCRATCH}/klocwork/build"
-mkdir -p "${CI_SCRATCH}/klocwork/tables"
+rm -rf "${CI_WORK}/klocwork"
+mkdir -p "${CI_WORK}/klocwork/build"
+mkdir -p "${CI_WORK}/klocwork/tables"
 
 pushd alljoyn/core/alljoyn
-    ci_kwinject --output "$( ci_natpath "${CI_SCRATCH}/klocwork/build/spec.kw" )" \
+    ci_kwinject --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
         scons OS="${CIAJ_OS}" CPU="${CIAJ_CPU}" VARIANT="${CIAJ_VARIANT}" BINDINGS="${CIAJ_BINDINGS}" \
         BR="${CIAJ_BR}" POLICYDB="${CIAJ_POLICYDB}" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION} \
         ${GECKO_BASE:+GECKO_BASE=}"$GECKO_BASE" \
@@ -86,9 +86,9 @@ pushd alljoyn/core/alljoyn
     ci_showfs
 popd
 
-ls -la "${CI_SCRATCH}/klocwork/build"
+ls -la "${CI_WORK}/klocwork/build"
 
-pushd "${CI_SCRATCH}/klocwork/tables"
+pushd "${CI_WORK}/klocwork/tables"
     ci_kwbuild ../build/spec.kw
     cp build.log "${CI_ARTIFACTS}/klocwork_build.log"
 popd
