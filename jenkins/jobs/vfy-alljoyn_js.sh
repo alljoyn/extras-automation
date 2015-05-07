@@ -195,8 +195,7 @@ cd "${WORKSPACE}"
 pushd alljoyn/core/alljoyn-js
     (
         export ALLJOYN_DISTDIR="$( ci_natpath "$ALLJOYN_DISTDIR" )"
-
-        ci_scons JSDOCS=true JSDOC_DIR=/srv/jenkins-ci/node_modules/jsdoc WS=$_ws VARIANT=release DUKTAPE_DIST="$( ci_natpath "${CI_SCRATCH}/${CIAJ_DUKTAPE}" )" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+        ci_scons WS=$_ws VARIANT=release DUKTAPE_DIST="$( ci_natpath "${CI_SCRATCH}/${CIAJ_DUKTAPE}" )" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
     )
     ci_showfs
 
@@ -206,7 +205,7 @@ pushd alljoyn/core/alljoyn-js
     cd console
     (
         export ALLJOYN_DISTDIR="$( ci_natpath "$ALLJOYN_DISTDIR" )"
-        ci_scons JSDOCS=true JSDOC_DIR=/srv/jenkins-ci/node_modules/jsdoc WS=$_ws VARIANT=release ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+        ci_scons WS=$_ws VARIANT=release ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
     )
     ci_showfs
 popd
