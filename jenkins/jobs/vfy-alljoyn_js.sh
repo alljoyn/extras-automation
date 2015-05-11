@@ -266,28 +266,18 @@ pushd alljoyn/core/alljoyn-js
             :
             : WARNING python debugging console not implemented
             :
-            # FIXME - setup.py should accept ALLJOYN_DISTDIR variable instead of this symlink
-            # rm -f    ../../alljoyn/build/win7/x86_64/release/dist
-            # mkdir -p ../../alljoyn/build/win7/x86_64/release
-            # cmd ${CI_SLASH_1_2}C mklink ${CI_SLASH_1_2}D "$( ci_natpath ../../alljoyn/build/win7/x86_64/release/dist )" "$( ci_natpath "$ALLJOYN_DISTDIR" )"
             # FIXME - build fails on Jenkins Windows build slave
             # (
                 # export VS90COMNTOOLS=$VS120COMNTOOLS
                 # export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
                 # python setup.py build
             # )
-            # rm -f    ../../alljoyn/build/win7/x86_64/release/dist
             ;;
         ( alljoyn-*-linux*-sdk-dbg | alljoyn-*-linux*-sdk-rel )
             :
             : START python debugging console
             :
-            # FIXME - setup.py should accept ALLJOYN_DISTDIR variable instead of this symlink
-            rm -f    ../../alljoyn/build/linux/x86_64/debug/dist
-            mkdir -p ../../alljoyn/build/linux/x86_64/debug
-            ln -s "$ALLJOYN_DISTDIR" ../../alljoyn/build/linux/x86_64/debug/dist
             python setup.py build
-            rm -f    ../../alljoyn/build/linux/x86_64/debug/dist
             ;;
         ( * )
             :
