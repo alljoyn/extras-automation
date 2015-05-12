@@ -70,7 +70,7 @@ ci_core_sconsbuild() {
         case "$_uncrustify" in
         ( uncrustify* )
             case "${GERRIT_BRANCH}/$_uncrustify" in
-            ( RB14.12/uncrustify\ 0.61* | feature/security2.0/uncrustify\ 0.61* )
+            ( RB14.12/uncrustify\ 0.61* )
                 local _ws=off
                 :
                 : WARNING $ci_job, found "$_uncrustify", have alljoyn branch="${GERRIT_BRANCH}" : skipping Whitespace scan
