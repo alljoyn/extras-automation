@@ -152,6 +152,8 @@ do
 
     pushd alljoyn/core/alljoyn
         eval $( ci_scons_vartags "${CIAJ_OS}" "${CIAJ_CPU}" $_variant )
+            # per request, test_tools team, 5/14/2015 - nothing follows test_tools in the build anyway
+        rm -f "$dist"/cpp/lib/liballjoyn*.so
     popd
     pushd alljoyn/core
 
@@ -162,8 +164,9 @@ do
         ( * )   ci_exit 2 $ci_job, trap "GIT_URL=${GIT_URL}" ;;
         esac
 
-        rm -rf test_tools
-        git clone "$b/core/test.git" test_tools || {
+        rm -rf test_tools ajtcl
+        git clone "$b/core/test.git" test_tools && \
+        git clone "$b/core/ajtcl.git"           || {
             :
             : UNSTABLE $ci_job, test_tools
             :
