@@ -244,23 +244,23 @@ pushd alljoyn/core/alljoyn-js
     )
     ci_showfs
 
-    :
-    : START build console
-    :
-    cd console
-    (
-        export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
-        ci_scons V=$_verbose WS=$_ws VARIANT=$_variant ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
-    )
-    ci_showfs
-
     case "${GERRIT_BRANCH}" in
     ( *reorg )
+        # do not run a separate scons build in console
         :
-        : WARNING python debugging console not implemented
+        : WARNING python debugging console not implemented for ${GERRIT_BRANCH}
         :
         ;;
     ( * )
+        :
+        : START build console
+        :
+        cd console
+        (
+            export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
+            ci_scons V=$_verbose WS=$_ws VARIANT=$_variant ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+        )
+
         case "${CIAJ_CORE_SDK}" in
         ( alljoyn-*-win7*-sdk )
             :
