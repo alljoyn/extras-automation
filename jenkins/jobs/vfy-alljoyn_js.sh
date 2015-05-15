@@ -303,12 +303,24 @@ rm -rf "$work" "$to"    || : error ignored
 mkdir -p "$work"        || : error ignored
 
 cp alljoyn/manifest.txt "$work"
+case "${GERRIT_BRANCH}" in
+( *reorg )
+    pushd alljoyn/core/alljoyn-js/dist/bin
+        cp -p  alljoynjs   "$work" || cp -p  alljoynjs.exe "$work"
+        cp -p  ajs_console "$work" || cp -p  ajs_console.exe "$work"
+    popd
+    ;;
+( * )
+    pushd alljoyn/core/alljoyn-js
+        cp -p  alljoynjs   "$work" || cp -p  alljoynjs.exe "$work"
+        cd console
+        cp -p  ajs_console "$work" || cp -p  ajs_console.exe "$work"
+    popd
+    ;;
+esac
 pushd alljoyn/core/alljoyn-js
-    cp -p  alljoynjs   "$work" || cp -p  alljoynjs.exe "$work"
     cp -rp js          "$work"
     cp -rp tools       "$work"
-    cd console
-    cp -p  ajs_console "$work" || cp -p  ajs_console.exe "$work"
 popd
 
 case "${CIAJ_CORE_SDK}" in
