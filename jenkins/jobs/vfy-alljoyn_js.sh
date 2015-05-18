@@ -238,20 +238,24 @@ case "${GERRIT_BRANCH}" in  ### FIXME
 esac
 
 pushd alljoyn/core/alljoyn-js
-    (
-        export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
-        ci_scons V=$_verbose WS=$_ws VARIANT=$_variant $duktape_envname="$duktape_distsrc" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
-    )
-    ci_showfs
-
     case "${GERRIT_BRANCH}" in
     ( *reorg )
+        _ALLJOYN_DIST=$( ci_natpath "$ALLJOYN_DISTDIR" )
+        ci_scons V=$_verbose WS=$_ws VARIANT=$_variant $duktape_envname="$duktape_distsrc" ALLJOYN_DIST="$_ALLJOYN_DIST" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+        ci_showfs
+
         # do not run a separate scons build in console
         :
         : WARNING python debugging console not implemented for ${GERRIT_BRANCH}
         :
         ;;
     ( * )
+        (
+            export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
+            ci_scons V=$_verbose WS=$_ws VARIANT=$_variant $duktape_envname="$duktape_distsrc" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+        )
+        ci_showfs
+
         :
         : START build console
         :
