@@ -141,68 +141,127 @@ do
     popd
 done
 
+case "${CI_VERBOSE}" in ( [NnFf]* ) _verbose=0 ;; ( * ) _verbose=1 ;; esac
+
+case "${CIAJ_GTEST}" in
+( [NnFf]* ) _local_gtest_dir= ;;
+( * )       _local_gtest_dir=$( ci_natpath "${GTEST_DIR}" ) ;;
+esac
+
 for _variant in debug release
 do
     # cram some stuff into this do loop just so we can easily "break" if anything goes wrong
-    # never fail this build just because test_tools does not work - instead, mark UNSTABLE
+    # never fail this build just because core/test build does not work - instead, mark UNSTABLE
 
     :
-    : START test_tools $_variant
+    : START core/test tools $_variant
     :
 
     pushd alljoyn/core/alljoyn
         eval $( ci_scons_vartags "${CIAJ_OS}" "${CIAJ_CPU}" $_variant )
-            # per request, test_tools team, 5/14/2015 - nothing follows test_tools in the build anyway
+            # per request, core/test team, 5/14/2015 - nothing follows core/test in the build anyway
         rm -f "$dist"/cpp/lib/liballjoyn*.so
     popd
+
     pushd alljoyn/core
 
-        # check out core/test.git, aka "test_tools"
         case "${GIT_URL}" in
-        ( */core/alljoyn.git )   b=${GIT_URL%/core/alljoyn.git} ;;
-        ( */core/alljoyn )       b=${GIT_URL%/core/alljoyn} ;;
+        ( */core/alljoyn.git )  b=${GIT_URL%/core/alljoyn.git} ;;
+        ( */core/alljoyn )      b=${GIT_URL%/core/alljoyn} ;;
         ( * )   ci_exit 2 $ci_job, trap "GIT_URL=${GIT_URL}" ;;
         esac
 
-        rm -rf test_tools ajtcl
-        git clone "$b/core/test.git" test_tools && \
-        git clone "$b/core/ajtcl.git"           || {
+        # check out core/test.git, aka "tools"
+        # always master branch
+        rm -rf test
+        git clone "$b/core/test.git"    || {
             :
-            : UNSTABLE $ci_job, test_tools
+            : UNSTABLE $ci_job, core/test tools
             :
             popd
             break
         }
-        # always take master branch
 
-        # manifest for test_tools artifact
-        cat ../manifest.txt       > test_tools/scl/manifest.txt
-        ci_genversion test_tools >> test_tools/scl/manifest.txt
+        # manifest for core/test "tools" artifact
+        cat ../manifest.txt >   test/scl/manifest.txt
+        ci_genversion test  >>  test/scl/manifest.txt
 
-        # build scl subdirectory only
-        pushd test_tools/scl
+        # check out core/ajtcl
+        rm -rf ajtcl
+        case "${CIAJ_OS}" in
+        ( android )
+            ;;
+        ( * )
+            git clone "$b/core/ajtcl.git"   || {
+                :
+                : UNSTABLE $ci_job, core/test tools
+                :
+                popd
+                break
+            }
+            pushd ajtcl
+                # try to get same branch as Std Core build used
+                git checkout "${GERRIT_BRANCH}" || {
+                    :
+                    : WARNING, $ci_job, GERRIT_BRANCH=${GERRIT_BRANCH} not found in ajtcl
+                    : using default branch:
+                    git branch
+                    :
+                }
+            popd
+
+            # manifest for core/test "tools" artifact
+            ci_genversion ajtcl >>  test/scl/manifest.txt
+            ;;
+        esac
+
+        :
+        : INFO core/test tools manifest
+        :
+        cat test/scl/manifest.txt
+        :
+
+        # build ajtcl
+        case "${CIAJ_OS}" in
+        ( android )
+            ;;
+        ( * )
+            pushd ajtcl
+                :
+                : INFO scons build ajtcl $_variant
+                :
+                git log -1
+                ci_showfs
+
+                : START scons build ajtcl $_variant
+                ci_scons V=$_verbose WS=off VARIANT=$_variant ${_local_gtest_dir:+GTEST_DIR=}"$_local_gtest_dir" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION} || {
+                    :
+                    : WARNING $ci_job, scons build failed ajtcl $_variant
+                    :
+                }
+            popd
+            ;;
+        esac
+
+        # build core/test, scl subdirectory only
+        pushd test/scl
             :
-            : INFO test_tools manifest
-            :
-            cat manifest.txt
+            : INFO scons build core/test/scl $_variant
             :
             git log -1
             ci_showfs
 
             ls SConstruct > /dev/null || {
                 :
-                : UNSTABLE $ci_job, test_tools
+                : UNSTABLE $ci_job, core/test/scl $_variant
                 :
                 popd ; popd
                 break
             }
 
-            :
-            : build test_tools $_variant
-            :
             ci_core_test_sconsbuild "${CIAJ_OS}" "${CIAJ_CPU}" $_variant || {
                 :
-                : UNSTABLE $ci_job, test_tools $_variant
+                : UNSTABLE $ci_job, core/test/scl $_variant
                 :
                 popd ; popd
                 break
@@ -210,11 +269,11 @@ do
             ci_showfs
 
             :
-            : test_tools.zip $_variant
+            : core/test tools.zip $_variant
             :
             ci_zip_simple_artifact "$PWD" "${CI_ARTIFACT_NAME}-tools-$vartag" || {
                 :
-                : UNSTABLE $ci_job, test_tools $_variant
+                : UNSTABLE $ci_job, core/test tools $_variant
                 :
                 popd ; popd
                 break
