@@ -328,10 +328,10 @@ if false; then
 
     # activate this block if jenkins triggers builds on branch RB15.04
     # doWork ajtcl-$fileVersion-src
-    # # no branch yet # doWork ajtcl-services-$fileVersion-src
+    # doWork ajtcl-services-$fileVersion-src
     # doWork alljoyn-$fileVersion-src
     # # no branch yet # doWork alljoyn-lsf-$fileVersion-src
-    # # no branch yet # doWork alljoyn-services-$fileVersion-src
+    # doWork alljoyn-services-$fileVersion-src
 
 
 
