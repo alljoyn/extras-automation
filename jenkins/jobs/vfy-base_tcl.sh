@@ -183,7 +183,7 @@ do
 
     cd "${WORKSPACE}"
 
-    zip=${CI_ARTIFACT_NAME}-$_os-$cputag-sdk-$vartag
+    zip=${CI_ARTIFACT_NAME}-$_os-$cputag-dist-$vartag
     work=${CI_ARTIFACTS_SCRATCH}/$zip
     to=${CI_ARTIFACTS}/$zip.zip
 
