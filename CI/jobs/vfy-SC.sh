@@ -17,7 +17,7 @@
 
 
 set -e +x
-ci_job=vfy-alljoyn_core.sh
+ci_job=vfy-SC.sh
 ci_job_xit=0
 echo >&2 + : BEGIN $ci_job
 echo >&2 + : START preamble

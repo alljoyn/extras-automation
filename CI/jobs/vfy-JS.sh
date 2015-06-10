@@ -16,7 +16,7 @@
 # Gerrit-verify build for AllJoyn-Javascript on any platform
 
 set -e +x
-ci_job=vfy-alljoyn_js.sh
+ci_job=vfy-JS.sh
 ci_job_xit=0
 echo >&2 + : BEGIN $ci_job
 echo >&2 + : START preamble

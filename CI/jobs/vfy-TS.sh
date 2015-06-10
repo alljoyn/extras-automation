@@ -16,7 +16,7 @@
 # Gerrit-verify build for AllJoyn Thin Services on any platform
 
 set -e +x
-ci_job=vfy-base_tcl.sh
+ci_job=vfy-TS.sh
 ci_job_xit=0
 echo >&2 + : BEGIN $ci_job
 echo >&2 + : START preamble

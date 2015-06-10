@@ -16,7 +16,7 @@
 # Full build for AllJoyn Std Core on all platforms except OSX
 
 set -e +x
-ci_job=full-alljoyn_core.sh
+ci_job=full-SC.sh
 ci_job_xit=0
 echo >&2 + : BEGIN $ci_job
 echo >&2 + : START preamble

@@ -13,52 +13,55 @@
 #    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-# "Sandbox" build for prototyping Jenkins builds within the AllJoyn CI framework. 
-# Cloned from vfy-ajtcl-u1404 and stripped-down.
+# "Sandbox-test" build for prototyping Jenkins builds within the AllJoyn CI framework. 
+# Derived from vfy-TC-u1404.
 
 set -e +x
-ci_job=sandbox.sh
+ci_job=sandbox-test.sh
 ci_job_xit=0
 echo >&2 + : BEGIN $ci_job
 echo >&2 + : START preamble
 source "${CI_NODESCRIPTS_PART}.sh"
 
+: get upstream build environment
+
+ci_upsetenv 1
+echo >&2 + : source up1setenv.sh
+    # the following source, ci_savenv ops are standard for downstream jobs, but cannot be pushed into a function
+source "${CI_ARTIFACTS}/env/up1setenv.sh"
+ci_savenv
+
 case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) ci_showfs ;; esac
 echo >&2 + : STATUS preamble ok
 set -x
 
-case "${CI_VERBOSE}" in ( [NnFf]* ) _verbose=0 ;; ( * ) _verbose=1 ;; esac
-
 :
 :
 cd "${WORKSPACE}"
 
-ci_genversion alljoyn/core/ajtcl ${GERRIT_BRANCH}  >  alljoyn/manifest.txt
-cp alljoyn/manifest.txt artifacts
-
-: INFO manifest
-
-cat alljoyn/manifest.txt
-
 :
-: START scons ajtcl dbg
+: START get upstream artifact
 :
 
-rm -f   "${CI_SCRATCH}/ajtcl.tar"
-tar -cf "${CI_SCRATCH}/ajtcl.tar" alljoyn/core/ajtcl
+up1_zip=$( cd "${CI_UP1}" && ls -d "${CI_ARTIFACT_NAME_UP1}"*-dbg.zip | head -1 )
+case "$up1_zip" in ( "" ) ci_exit 2 $ci_job, upstream 1 artifact "${CI_ARTIFACT_NAME_UP1}*-dbg.zip" not found ;; esac 
+ci_unzip "${CI_UP1}/$up1_zip"
+ci_mv ${up1_zip%.zip} alljoyn   # workaround for Windows/Cygwin
+ci_showfs alljoyn
+
+:
+: START ajtcltest dbg
+:
+
+    # FIXME : tests should run a stand-alone alljoyn-daemon (Linux) or sample router (Windows), but they don't do either
+
+source "${CI_COMMON}/cif_scons_vartags.sh"
+source "${CI_COMMON}/cif_core_gtests.sh"
 
 pushd alljoyn/core/ajtcl
-    ci_scons V=$_verbose WS=off VARIANT=debug GTEST_DIR="$( ci_natpath "$GTEST_DIR" )" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
-    ci_showfs
+    eval $( ci_thin_scons_vartags debug )
+    ci_core_gtests $_os $_cpu debug on ajtcl
 popd
-
-:
-: START artifact
-:
-
-cd "${WORKSPACE}"
-
-ci_zip_simple_artifact alljoyn "${CI_ARTIFACT_NAME}-dbg"
 
 set +x
 echo >&2 + : STATUS $ci_job exit $ci_job_xit

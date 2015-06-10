@@ -16,7 +16,7 @@
 # Klocwork Analysis for AllJoyn-Javascript on any platform
 
 set -e +x
-ci_job=kw-alljoyn_js.sh
+ci_job=kw-JS.sh
 ci_job_xit=0
 echo >&2 + : BEGIN $ci_job
 echo >&2 + : START preamble

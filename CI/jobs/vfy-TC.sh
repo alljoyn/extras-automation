@@ -20,7 +20,7 @@
     #       so we do not need a daemon yet, so that code is deactivated
 
 set -e +x
-ci_job=vfy-ajtcl.sh
+ci_job=vfy-TC.sh
 ci_job_xit=0
 echo >&2 + : BEGIN $ci_job
 echo >&2 + : START preamble

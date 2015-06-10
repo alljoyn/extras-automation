@@ -13,18 +13,48 @@
 #    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-# Klocwork Analysis for AllJoyn Thin Core on any Xyzcity platform
+# Klocwork Analysis for AllJoyn Std Core on any Xyzcity platform
+# (except OSX which we do not support with Klocwork anyway)
 
 set -e +x
-ci_job=xyz/kw-ajtcl.sh
+ci_job=xyz/kw-SC.sh
 ci_job_xit=0
 echo >&2 + : BEGIN $ci_job
 echo >&2 + : START preamble
 source "${CI_NODESCRIPTS_PART}.sh"
 
+case "${CIAJ_VARIANT}" in
+( debug )   export vartag=dbg ;;
+( release ) export vartag=rel ;;
+( * )       ci_exit 2 $ci_job, "CIAJ_VARIANT=${CIAJ_VARIANT}" ;;
+esac
+
+case "${CIAJ_CPU}" in
+( *64 )     export cputag=x64 ;;
+( *86 )     export cputag=x86 ;;
+( arm )     export cputag=${CIAJ_CPU} ;;
+esac
+
+case "${CIAJ_BINDINGS}" in
+( js,* | *,js,* | *,js )
+    export GECKO_BASE=$( ci_natpath "${GECKO_BASE}" )
+    export JSDOC_DIR=$( ci_natpath "${JSDOC_DIR}" )
+    ;;
+( * )
+    unset GECKO_BASE
+    unset JSDOC_DIR
+    ;;
+esac
+
+case "${CIAJ_GTEST}" in
+( [NnFf]* ) unset GTEST_DIR ;;
+( * )       export GTEST_DIR=$( ci_natpath "${GTEST_DIR}" ) ;;
+esac
+
 source "${CI_COMMON}/${CI_SITE}/cif_kwbuild.sh"
 
-case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) ci_showfs ;; esac
+ci_savenv
+case "${CI_VERBOSE}" in ( [NnFf]* ) verbose=0 ;; ( * ) verbose=1 ; ci_showfs ;; esac
 echo >&2 + : STATUS preamble ok
 set -x
 
@@ -32,7 +62,7 @@ set -x
 :
 cd "${WORKSPACE}"
 
-ci_genversion alljoyn/core/ajtcl ${GERRIT_BRANCH}  >  alljoyn/manifest.txt
+ci_genversion alljoyn/core/alljoyn ${GERRIT_BRANCH}  >  alljoyn/manifest.txt
 cp alljoyn/manifest.txt artifacts
 
 : INFO manifest
@@ -46,11 +76,13 @@ rm -rf "${CI_WORK}/klocwork"
 mkdir -p "${CI_WORK}/klocwork/build"
 mkdir -p "${CI_WORK}/klocwork/tables"
 
-pushd alljoyn/core/ajtcl
+pushd alljoyn/core/alljoyn
     ci_kwinject --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
-        scons WS=off VARIANT=debug \
-        GTEST_DIR="$( ci_natpath "$GTEST_DIR" )" \
-        ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+        scons OS="${CIAJ_OS}" CPU="${CIAJ_CPU}" VARIANT="${CIAJ_VARIANT}" BINDINGS="${CIAJ_BINDINGS}" \
+        BR="${CIAJ_BR}" POLICYDB="${CIAJ_POLICYDB}" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION} \
+        ${GECKO_BASE:+GECKO_BASE=}"$GECKO_BASE" \
+        ${GTEST_DIR:+GTEST_DIR=}"$GTEST_DIR" \
+        V=$verbose WS=off DOCS=none
     ci_showfs
 popd
 
