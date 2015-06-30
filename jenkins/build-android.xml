@@ -347,7 +347,7 @@ gitVersion  ${gitVersion}
         <condition property="doOpenssl" >
             <contains string="${scons.crypto}" substring="openssl" casesensitive="false" />
         </condition>
-        <condition property="ALLJOYN_OPENSSL_LIBS" value="-lcrypto" else="" >
+        <condition property="ALLJOYN_OPENSSL_LIBS" value="-L${apkDir}/cpp/lib -lcrypto" else="" >
             <isset property="doOpenssl" />
         </condition>
 
