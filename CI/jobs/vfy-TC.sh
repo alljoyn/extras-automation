@@ -34,37 +34,7 @@ case "${CI_VERBOSE}" in ( [NnFf]* ) _verbose=0 ;; ( * ) _verbose=1 ;; esac
 
 case "$( uname )" in
 ( Linux )
-    _uncrustify=$( uncrustify --version ) || : ok
-    case "$_uncrustify" in
-    ( uncrustify* )
-        case "${GERRIT_BRANCH}/$_uncrustify" in
-        ( RB14.12/uncrustify\ 0.61* )
-            _ws=off
-            :
-            : WARNING $ci_job, found "$_uncrustify", have alljoyn branch="${GERRIT_BRANCH}" : skipping Whitespace scan
-            :
-            ;;
-        ( RB14.12/uncrustify\ 0.57* )
-            _ws=detail
-            ;;
-        ( */uncrustify\ 0.61* )
-            _ws=detail
-            ;;
-        ( * )
-            _ws=off
-            :
-            : WARNING $ci_job, found "$_uncrustify", have alljoyn branch="${GERRIT_BRANCH}" : skipping Whitespace scan
-            :
-            ;;
-        esac
-        ;;
-    ( * )
-        _ws=off
-        :
-        : WARNING $ci_job, uncrustify not found: skipping Whitespace scan
-        :
-        ;;
-    esac
+    _ws=detail
     ;;
 ( * )
     _ws=off

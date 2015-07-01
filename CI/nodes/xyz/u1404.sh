@@ -50,8 +50,20 @@ export CLASSPATH=/opt/java/lib/junit-4.11.jar
 export JAVA6_BOOT=/opt/java/jdk1.6.0_45/jre/lib
 unset  OPENSSL_ROOT
 
-_uncrustify_bin=${CIXYZ_SHOPT_NODE}/uncrustify-0.61/bin
 _kwbin=/opt/klocwork-10.0.6/install/bin
+_uncrustify_061=${CIXYZ_SHOPT_NODE}/uncrustify-0.61/bin/uncrustify
+_uncrustify_057=/opt/bin/uncrustify
+
+case "${GERRIT_BRANCH}" in
+( RB14.* )
+    "$_uncrustify_057" --version
+    _uncrustify_bin=$( dirname "$_uncrustify_057" )
+    ;;
+( * )
+    "$_uncrustify_061" --version
+    _uncrustify_bin=$( dirname "$_uncrustify_061" )
+    ;;
+esac
 
 ci_ck_found GECKO_BASE JSDOC_DIR GTEST_DIR JAVA_HOME ANT_HOME CLASSPATH JAVA6_BOOT _uncrustify_bin _kwbin
 
@@ -63,22 +75,36 @@ case "${CIAJ_OS}" in
         unset ANDROID_SDK ANDROID_NDK ANDROID_SRC SDK_ROOT
         ;;
     ( 16 | 17 | 18 )
-        export ANDROID_SDK=/opt/android-sdk-linux
-        export ANDROID_NDK=/opt/android-ndk-r9d
-        export ANDROID_SRC=/opt/android_jellybean_georgen
+        case "${GERRIT_BRANCH}" in
+        ( RB14.* | RB15.04 )
+            export ANDROID_SDK=/opt/android-sdk-linux
+            export ANDROID_NDK=/opt/android-ndk-r9d
+            export ANDROID_SRC=/opt/android_jellybean_georgen
+            ci_ck_found ANDROID_SRC
+            ;;
+        ( * )
+            export ANDROID_SDK=${CIXYZ_SHOPT_NODE}/android-sdk-linux
+            export ANDROID_NDK=${CIXYZ_SHOPT_NODE}/android-ndk-r10e
+            case "${CIAJ_CRYPTO}" in
+            ( openssl )
+                export ANDROID_SRC=/opt/android_jellybean_georgen
+                ci_ck_found ANDROID_SRC
+                ;;
+            ( builtin | * )
+                unset ANDROID_SRC
+                ;;
+            esac
+            ;;
+        esac
         ;;
     ( * )
-        echo >&2 + : WARNING ANDROID_API_LEVEL="${CIAJ_ANDROID_API_LEVEL}" is not supported on this node
-        # but good luck anyway
-        export ANDROID_SDK=/opt/android-sdk-linux
-        export ANDROID_NDK=/opt/android-ndk-r9d
-        export ANDROID_SRC=/opt/android_jellybean_georgen
+        ci_exit 2 ANDROID_API_LEVEL="${CIAJ_ANDROID_API_LEVEL}" is not supported on this node
         ;;
     esac
     export ALLJOYN_ANDROID_KEYSTORE=/opt/AllJoyn_KeyStore/AllJoyn_KeyStore
     export ALLJOYN_ANDROID_KEYSTORE_PW=/opt/AllJoyn_KeyStore/.password
     export ALLJOYN_ANDROID_KEYSTORE_ALIAS=AllJoyn
-    ci_ck_found ANDROID_SDK ANDROID_NDK ANDROID_SRC ALLJOYN_ANDROID_KEYSTORE ALLJOYN_ANDROID_KEYSTORE_PW
+    ci_ck_found ANDROID_SDK ANDROID_NDK ALLJOYN_ANDROID_KEYSTORE ALLJOYN_ANDROID_KEYSTORE_PW
 
     export SDK_ROOT=${ANDROID_SDK}
     export PATH=$PATH:$SDK_ROOT/tools:$SDK_ROOT/platform-tools:$ANDROID_NDK

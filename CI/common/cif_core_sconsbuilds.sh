@@ -66,40 +66,25 @@ ci_core_sconsbuild() {
 
     case "${CIAJ_OS}" in
     ( linux )
-        local _uncrustify=$( uncrustify --version ) || : ok
-        case "$_uncrustify" in
-        ( uncrustify* )
-            case "${GERRIT_BRANCH}/$_uncrustify" in
-            ( RB14.12/uncrustify\ 0.61* )
-                local _ws=off
-                :
-                : WARNING $ci_job, found "$_uncrustify", have alljoyn branch="${GERRIT_BRANCH}" : skipping Whitespace scan
-                :
-                ;;
-            ( RB14.12/uncrustify\ 0.57* )
-                local _ws=detail
-                ;;
-            ( */uncrustify\ 0.61* )
-                local _ws=detail
-                ;;
-            ( * )
-                local _ws=off
-                :
-                : WARNING $ci_job, found "$_uncrustify", have alljoyn branch="${GERRIT_BRANCH}" : skipping Whitespace scan
-                :
-                ;;
-            esac
+        local _ws=detail
+        case "${CIAJ_GCC46}" in
+        ( [YyTt]* )
+            _gcc46="CC=gcc-4.6 CXX=g++-4.6"
+            _ws=off
             ;;
         ( * )
-            local _ws=off
-            :
-            : WARNING $ci_job, uncrustify not found: skipping Whitespace scan
-            :
+            unset _gcc46
+            ;;
+        esac
+        case "{CIAJ_BR}" in
+        ( [Oo][Ff][Ff] )
+            _ws=off
             ;;
         esac
         ;;
     ( * )
         local _ws=off
+        unset _gcc46
         ;;
     esac
 
@@ -115,7 +100,7 @@ ci_core_sconsbuild() {
         ${CIAJ_BR:+BR=}"${CIAJ_BR}" \
         ${CIAJ_POLICYDB:+POLICYDB=}"${CIAJ_POLICYDB}" \
         ${CIAJ_CRYPTO:+CRYPTO=}"${CIAJ_CRYPTO}" \
-        ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}"${CIAJ_MSVC_VERSION}" \
+        $_gcc46 ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}"${CIAJ_MSVC_VERSION}" \
         ${CIAJ_ANDROID_API_LEVEL:+ANDROID_API_LEVEL=}"${CIAJ_ANDROID_API_LEVEL}" \
         ${_gecko_base:+GECKO_BASE=}"$_gecko_base" \
         ${_jsdoc_dir:+JSDOC_DIR=}"$_jsdoc_dir" \
@@ -161,6 +146,22 @@ ci_core_test_sconsbuild() {
     ( * )       local _gtest_dir=$( ci_natpath "${GTEST_DIR}" ) ;;
     esac
 
+    case "${CIAJ_OS}" in
+    ( linux )
+        case "${CIAJ_GCC46}" in
+        ( [YyTt]* )
+            _gcc46="CC=gcc-4.6 CXX=g++-4.6"
+            ;;
+        ( * )
+            unset _gcc46
+            ;;
+        esac
+        ;;
+    ( * )
+        unset _gcc46
+        ;;
+    esac
+
     unset AJ_OS AJ_CPU AJ_VARIANT AJ_BINDINGS AJ_BR AJ_POLICYDB AJ_CRYPTO AJ_MSVC_VERSION AJ_ANDROID_API_LEVEL
     unset AJ_GECKO_BASE AJ_JSDOC_DIR AJ_GTEST_DIR AJ_ANDROID_SDK AJ_ANDROID_NDK AJ_ANDROID_SRC
 
@@ -172,7 +173,7 @@ ci_core_test_sconsbuild() {
         ${CIAJ_BR:+BR=}"${CIAJ_BR}" \
         ${CIAJ_POLICYDB:+POLICYDB=}"${CIAJ_POLICYDB}" \
         ${CIAJ_CRYPTO:+CRYPTO=}"${CIAJ_CRYPTO}" \
-        ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}"${CIAJ_MSVC_VERSION}" \
+        $_gcc46 ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}"${CIAJ_MSVC_VERSION}" \
         ${CIAJ_ANDROID_API_LEVEL:+ANDROID_API_LEVEL=}"${CIAJ_ANDROID_API_LEVEL}" \
         ${_gtest_dir:+GTEST_DIR=}"$_gtest_dir" \
         ${ANDROID_SDK:+ANDROID_SDK=}"$ANDROID_SDK" \

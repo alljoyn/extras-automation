@@ -37,7 +37,7 @@ case "${CIAJ_OS}" in
 esac
 
 ci_savenv
-case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) ci_showfs ;; esac
+case "${CI_VERBOSE}" in ( [NnFf]* ) _verbose= ;; ( * ) _verbose=-v ; ci_showfs ;; esac
 echo >&2 + : STATUS preamble ok
 date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
 set -x
@@ -101,6 +101,26 @@ case "${CIAJ_OS}" in
     popd
     ;;
 ( android )
+    :
+    : START android SDK
+    :
+    case "${GERRIT_BRANCH}" in
+    ( RB15.04 | RB14.* )
+        # backward compatibility between build-android.xml (CI config) and Android.mk (src)
+        sdk_crypto=openssl
+        ;;
+    ( * )
+        sdk_crypto="${CIAJ_CRYPTO}"
+        ;;
+    esac
+
+    ant -f "${CI_COMMON}/build-android.xml" $_verbose -Dscons.cpu="${CIAJ_CPU}" -Dscons.variant="${CIAJ_VARIANT}" \
+        -DANDROID_SDK="${ANDROID_SDK}" -DANDROID_NDK="${ANDROID_NDK}" -DANDROID_SRC="${ANDROID_SRC}" -Dscons.crypto="$sdk_crypto" \
+        -DALLJOYN_KEYSTORE.keystore="${ALLJOYN_ANDROID_KEYSTORE}" -DALLJOYN_KEYSTORE.password="${ALLJOYN_ANDROID_KEYSTORE_PW}"  -DALLJOYN_KEYSTORE.alias="${ALLJOYN_ANDROID_KEYSTORE_ALIAS}" \
+        -DsdkWork="${CI_ARTIFACTS_SCRATCH}" -DsconsDir="${WORKSPACE}/alljoyn/core/alljoyn" -DsdkName="${CI_ARTIFACT_NAME}-sdk-$vartag"
+
+    mv -f "${CI_ARTIFACTS_SCRATCH}/${CI_ARTIFACT_NAME}-sdk-$vartag.zip" "${CI_ARTIFACTS}"
+
     : INFO android unit tests : NOT YET
     ;;
 esac

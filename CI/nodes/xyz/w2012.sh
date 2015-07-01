@@ -69,8 +69,21 @@ export GRAPHVIZ_HOME=/c/Install/Graphviz2.38
 
 _doxygen_bin=$DOXYGEN_HOME/bin
 _dot_bin=$GRAPHVIZ_HOME/bin
-_uncrustify_bin=${CIXYZ_SHOPT_NODE}/uncrustify-0.61/bin
 _kwbin=/c/Klocwork/Server10.0/install/bin
+
+_uncrustify_061=${CIXYZ_SHOPT_NODE}/uncrustify-0.61/bin/uncrustify.exe
+_uncrustify_057=/c/Install/uncrustify-0.57-win32/uncrustify.exe
+
+case "${GERRIT_BRANCH}" in
+( RB14.* )
+    "$_uncrustify_057" --version
+    _uncrustify_bin=$( dirname "$_uncrustify_057" )
+    ;;
+( * )
+    "$_uncrustify_061" --version
+    _uncrustify_bin=$( dirname "$_uncrustify_061" )
+    ;;
+esac
 
 ci_ck_found IARBUILD EFM32_DIR _doxygen_bin _dot_bin _uncrustify_bin _kwbin
 
