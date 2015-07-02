@@ -299,6 +299,7 @@ gitVersion  ${gitVersion}
 
     <property name="apkDir"                 location="${workingDir}/apks" />
     <property name="apkTmp"                 location="${apkDir}/z-${user.name}-${xtstamp}" />
+    <property name="scons.crypto"           value="openssl" /> <!-- default=openssl for bw compatibility -->
 
     <!-- dev build slave settings
     <property environment="env" />
@@ -343,13 +344,24 @@ gitVersion  ${gitVersion}
             </and>
         </condition>
 
+        <condition property="doOpenssl" >
+            <contains string="${scons.crypto}" substring="openssl" casesensitive="false" />
+        </condition>
+        <condition property="ALLJOYN_OPENSSL_LIBS" value="-L${apkDir}/cpp/lib -lcrypto" else="" >
+            <isset property="doOpenssl" />
+        </condition>
+
         <echo>
-ANDROID_TARGET_API          ${ANDROID_TARGET_API}</echo>
+ANDROID_TARGET_API          ${ANDROID_TARGET_API}
+scons.crypto                ${scons.crypto}</echo>
 
         <echo level="verbose" >
+doOpenssl                   ${doOpenssl}
+ANDROID_SRC                 ${ANDROID_SRC}
+ALLJOYN_OPENSSL_LIBS        ${ALLJOYN_OPENSSL_LIBS}
+
 ANDROID_NDK                 ${ANDROID_NDK}
 ANDROID_SDK                 ${ANDROID_SDK}
-ANDROID_SRC                 ${ANDROID_SRC}
 androidSupportV4            ${androidSupportV4}
 ALLJOYN_KEYSTORE.keystore   ${ALLJOYN_KEYSTORE.keystore}
 ALLJOYN_KEYSTORE.password   ${ALLJOYN_KEYSTORE.password}
@@ -369,18 +381,25 @@ apkTmp                      ${apkTmp}</echo>
                 </not>
             </condition>
         </fail>
-        <fail message="ANDROID_SDK ANDROID_NDK ANDROID_SRC available checks failed" >
+        <fail message="ANDROID_SDK ANDROID_NDK available checks failed" >
             <condition>
                 <not>
                     <and>
                         <available file="${ANDROID_SDK}" type="dir" />
-                        <available file="${ANDROID_SRC}" type="dir" />
                         <available file="${ANDROID_NDK}" type="dir" />
-                        <available file="${ANDROID_SRC}/out/target/product/generic/system/lib/libcrypto.so" type="file" />
-                        <available file="${ANDROID_SRC}/out/target/product/generic/system/lib/libssl.so" type="file" />
                         <available file="${androidSupportV4}" type="file" />
                     </and>
                 </not>
+            </condition>
+        </fail>
+        <fail message="scons.crypto=openssl, ANDROID_SRC available checks failed" >
+            <condition>
+                <and>
+                    <isset property="doOpenssl" />
+                    <not>
+                        <available file="${ANDROID_SRC}/out/target/product/generic/system/lib/libcrypto.so" type="file" />
+                    </not>
+                </and>
             </condition>
         </fail>
         <fail message="ALLJOYN_KEYSTORE available checks failed" >
@@ -409,10 +428,6 @@ apkTmp                      ${apkTmp}</echo>
         <xcpio argv1="${sconsDist}" argv2="${apkDir}" argv3="false" >
             <include name="**" />
         </xcpio>
-        <xcpio argv1="${ANDROID_SRC}/out/target/product/generic/system/lib" argv2="${apkDir}/cpp/lib" argv3="false" >
-            <include name="libcrypto.so" />
-            <include name="libssl.so" />
-        </xcpio>
         <dirset id="ndkDirList" dir="${apkDir}" >
             <include name="cpp/alljoyn_android/**/*" />
             <include name="cpp/samples/**/*" />
@@ -437,7 +452,14 @@ apkTmp                      ${apkTmp}</echo>
         <echo message="apkDirList=${line.separator}${apkDirList}" />
     </target>
 
-    <target name="ndk" depends="clean-apk" >
+    <target name="alljoyn-openssl-libs" depends="clean-apk" if="doOpenssl" >
+        <xcpio argv1="${ANDROID_SRC}/out/target/product/generic/system/lib" argv2="${apkDir}/cpp/lib" argv3="false" >
+            <include name="libcrypto.so" />
+            <include name="libssl.so" />    <!-- only need for bw compatibility w core/alljoyn before Gerrit ID I9639a667028c494643de1221669ba48f450d7d72 -->
+        </xcpio>
+    </target>
+
+    <target name="ndk" depends="alljoyn-openssl-libs" >
         <local name="stderr" />
         <local name="script" />
         <delete file="${apkTmp}-script.sh" />
@@ -550,6 +572,7 @@ esac
         <echo level="verbose" message="${line.separator}SCRIPT${line.separator}" >${script}</echo>
         <apply executable="bash" dir="${apkDir}" inputstring="" searchpath="true" failonerror="true" force="true" osfamily="unix" >
             <arg value="${apkTmp}-script.sh" />
+            <env key="ALLJOYN_OPENSSL_LIBS" value="${ALLJOYN_OPENSSL_LIBS}" />
             <dirset refid="ndkDirList" />
         </apply>
         <loadfile property="stderr" srcFile="${apkTmp}-stderr.log" />
