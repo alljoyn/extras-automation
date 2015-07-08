@@ -150,6 +150,10 @@ l+0 < 3     { next; }
 
 u "" ~ /^[^A-Z]/    { next; }
 
+    # ignore variable if name has illegal (for shell) character
+
+u "" ~ /^[^A-Z0-9_]/    { next; }
+
     # ignore these
 
 u "" ~ /^CIF*_.*XET$/   { next; }
@@ -157,11 +161,9 @@ u "" ~ /^CIF*_.*ENV$/   { next; }
 
     # remember selected variable names
 
-q+0 == 0 && v "" ~ /^(CIAJ|GIT|GERRIT)_/ && v "" !~ /_UP[1-9]$/     {
-        q0v[ v "" ] = 1
-    }
-q+0 != 0 && v "" ~ /^(CIAJ|GIT|GERRIT)_/ && v "" !~ /_UP[1-9]$/     {
-        q1v[ v "" ] = 1
+v "" ~ /^(CIAJ|GIT|GERRIT)_/ && v "" !~ /_UP[1-9]$/ {
+        if( q+0 == 0 ) q0v[ v "" ] = 1
+        else           q1v[ v "" ] = 1
     }
 
     # only q==1 after this
@@ -170,19 +172,21 @@ q+0 == 0    { next; }
 
     # for selected variables, write $0 with "_UP1" added to variable name
 
-u "" ~ /^(CI[A-Z]*|BUILD|HUDSON|JENKINS|JOB|NODE|GIT|GERRIT)_/ && u "" !~ /_UP[1-9]$/      {
-        sub( "^declare -[^ ]+", "export" ) ; sub( "=", "_UP" up "=" ) ; p=1; print; next
-    }
-u "" ~ /^(DESCRIPTION_SETTER_DESCRIPTION|SERVICE_ID)$/                              {
+( u "" ~ /^(CI[A-Z]*|BUILD|HUDSON|JENKINS|JOB|NODE|GIT|GERRIT)_/ && u "" !~ /_UP[1-9]$/ ) || ( u "" ~ /^(DESCRIPTION_SETTER_DESCRIPTION|SERVICE_ID)$/ ) {
         sub( "^declare -[^ ]+", "export" ) ; sub( "=", "_UP" up "=" ) ; p=1; print; next
     }
 
 END {
         # carry selected variables from upstream job into downstream job
+        buf=""
         for ( v in q1v ) {
             if ( q0v[ v "" ]+0 == 0 ) {
-                vup=v ; sub( "$", "_UP" up, vup ) ; print "export " v "=$" vup ;
+                vup=v ; sub( "$", "_UP" up, vup ) ; print "export " v "=$" vup ; buf = buf "\n" v " = $" vup ;
             }
+        }
+        if ( buf "" != "" ) {
+            print "cat <<eof" ; print "#" ; print "# Jenkins EnvInject properties" ; print "#" buf ;
+            print "eof"
         }
     }
 EoF

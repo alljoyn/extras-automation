@@ -31,6 +31,8 @@ $1 " " $2 !~ /^declare -[^ ]+$/     { if( p+0 != 0 ) print; next; }
 l+0 < 3                             { next; }
     # ignore variable if name does not start with letter
 u "" ~ /^[^A-Z].*/                  { next; }
+    # ignore variable if name has illegal (for shell) character
+u "" ~ /[^A-Z0-9_]/                 { next; }
     # ignore the following variables, case-insensitive
 u "" == "ALLUSERSPROFILE"           { next; }
 u "" == "APPDATA"                   { next; }

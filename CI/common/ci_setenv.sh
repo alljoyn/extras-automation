@@ -286,7 +286,29 @@ case "$_t" in
     ci_savenv
     ci_upsetenv 1
     echo >&2 + : source up1setenv.sh
-    source "${CI_ARTIFACTS}/env/up1setenv.sh"
+    if ls -ld "${CI_ARTIFACTS}/env/up1setenv.properties" 2>/dev/null
+    then
+        echo >&2 + : INFO will not overwrite existing up1setenv.properties files
+        source "${CI_ARTIFACTS}/env/up1setenv.sh"
+    else
+        source "${CI_ARTIFACTS}/env/up1setenv.sh" > "${CI_WORK}/up1setenv.properties"
+            # add backslashes to contination lines
+            # the above "source up1setenv.sh" can not go in a pipeline with awk (below),
+            #   because we need the env variables set by "source"
+        awk < "${CI_WORK}/up1setenv.properties" > "${CI_ARTIFACTS}/env/up1setenv.properties" '
+# pass-through any comments at top of file
+p +0 == 0 && $0 !~ /^[A-Z0-9_]+ = ./    { print ; next ; }
+# do not print this line until we know if the next line starts a new variable
+    {
+        p = 1
+        if( $0 ~ /^[A-Z0-9_]+ = ./ )    c = ""
+        else                            c = "\\"
+    }
+    { print buf c ; }
+    { buf = $0 ; }
+END { if( p +0 != 0 ) print buf ; }
+'
+    fi
     ;;
 ( * )
     # no upstream env found
