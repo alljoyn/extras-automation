@@ -41,6 +41,9 @@
             <available file="${gitDir}" type="dir" />
         </and>
     </condition>
+    <condition property="doSconsJsDoc" >
+        <available file="${sconsJsDoc}/index.html" type="file" />
+    </condition>
 
     <property name="etcDir"                 location="${basedir}/etc" />
     <property name="unwantedList"           location="${etcDir}/unwanted.list" />
@@ -171,6 +174,7 @@ scons.variant   ${scons.variant}
 sconsDir        ${sconsDir}
 sconsDist       ${sconsDist}
 sconsJsDoc      ${sconsJsDoc}
+doSconsJsDoc    ${doSconsJsDoc}
 
 releaseVersion  ${releaseVersion}
 sdkName         ${sdkName}
@@ -201,14 +205,6 @@ extrasList.exists   ${extrasList.exists}</echo>
                         <available file="${unwantedList}"   type="file" />
                         <!-- extras are optional -->
                     </and>
-                </not>
-            </condition>
-        </fail>
-
-        <fail message="error, no API docs in ${sconsJsDoc}" status="1" >
-            <condition>
-                <not>
-                    <available file="${sconsJsDoc}/index.html"  type="file" />
                 </not>
             </condition>
         </fail>
@@ -289,12 +285,15 @@ gitVersion  ${gitVersion}
 
     <target name="dist" depends="clean" >
         <xDist />
+    </target>
+
+    <target name="dist2" depends="dist" if="${doSconsJsDoc}" >
         <xcpio argv1="${sconsJsDoc}" argv2="${sdkDist}/js/docs" >
             <include name="**" />
         </xcpio>
     </target>
 
-    <target name="extras" depends="dist" if="${extrasDir.exists}" >
+    <target name="extras" depends="dist2" if="${extrasDir.exists}" >
         <xcpExtras argv1="${sdkDir}" />
     </target>
 
