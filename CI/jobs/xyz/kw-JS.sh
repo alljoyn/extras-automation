@@ -148,24 +148,35 @@ ci_showfs "${ALLJOYN_DISTDIR}"
 
 cd "${WORKSPACE}"
 
-case "${CI_VERBOSE}" in ( [NnFf]* ) verbose=0 ;; ( * ) verbose=1 ;; esac
-
-:
-: START kwinject ajtcl
-:
 rm -rf "${CI_WORK}/klocwork"
 mkdir -p "${CI_WORK}/klocwork/build"
 mkdir -p "${CI_WORK}/klocwork/tables"
 
+:
+: START kwinject ajtcl
+:
+
 pushd alljoyn/core/ajtcl
-    (
-        unset GTEST_DIR
-        ci_kwinject --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
-            scons WS=off VARIANT=release \
-            ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
-    )
+    ci_kwinject --ignore-files 'conftest*.*' --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
+        scons WS=off VARIANT=release ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
     ci_showfs
 popd
+
+if ls -ld alljoyn/services/base_tcl/SConstruct
+then
+    :
+    : START kwinject base_tcl
+    :
+    pushd alljoyn/services/base_tcl
+        ci_kwinject --update --ignore-files 'conftest*.*' --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
+            scons WS=off EXCLUDE_ONBOARDING=yes VARIANT=release ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+    ci_showfs
+popd
+else
+    :
+    : WARNING no SConstruct in base_tcl / "${CIAJ_SERVICES_GITREV}"
+    :
+fi
 
 :
 : START kwinject alljoyn-js
@@ -173,36 +184,53 @@ popd
 
 cd "${WORKSPACE}"
 pushd alljoyn/core/alljoyn-js
-    (
-        export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
-        ci_kwinject --update --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
-            scons WS=off VARIANT=release \
-            DUKTAPE_DIST="$( ci_natpath "${CI_WORK}/${CIAJ_DUKTAPE}" )" \
-            ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
-    )
-    ci_showfs
+    case "${GERRIT_BRANCH}" in
+    ( RB15.04 ) # before tc_reorg
+        if [ "$(uname)" = "Linux" -o "$(uname)" = "Darwin" ]; then
+            ci_kwinject --update --ignore-files 'conftest*.*' --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
+                scons WS=off VARIANT=release DUKTAPE_DIST="${CI_WORK}/${CIAJ_DUKTAPE}"
+        else    # Windows desktop
+            (
+                export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
+                ci_kwinject --update --ignore-files 'conftest*.*' --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
+                    scons WS=off VARIANT=release DUKTAPE_DIST="$( ci_natpath "${CI_WORK}/${CIAJ_DUKTAPE}" )" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+            )
+        fi
+        ci_showfs
 
-    :
-    : START build console
-    :
-    cd console
-    (
-        export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
-        ci_kwinject --update --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
-            scons WS=off VARIANT=release \
-            ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
-    )
-    ci_showfs
+        :
+        : START kwinject console exe
+        :
+        cd console
+        (
+            export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
+            ci_kwinject --update --ignore-files 'conftest*.*' --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
+                scons WS=off VARIANT=release ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+        )
+        ;;
+    ( * )       # after tc_reorg
+        if [ "$(uname)" = "Linux" -o "$(uname)" = "Darwin" ]; then
+            ci_kwinject --update --ignore-files 'conftest*.*' --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
+                scons WS=off VARIANT=release DUKTAPE_SRC="${CI_WORK}/${CIAJ_DUKTAPE}/src" ALLJOYN_DIST="$ALLJOYN_DISTDIR"
+        else    # Windows desktop
+            ci_kwinject --update --ignore-files 'conftest*.*' --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
+                scons WS=off VARIANT=release DUKTAPE_SRC="$( ci_natpath "${CI_WORK}/${CIAJ_DUKTAPE}/src" )" ALLJOYN_DIST="$( ci_natpath "$ALLJOYN_DISTDIR" )" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+        fi
+        ci_showfs
+        ;;
+    esac
 popd
 
 ls -la "${CI_WORK}/klocwork/build"
 
 pushd "${CI_WORK}/klocwork/tables"
-    ci_kwbuild ../build/spec.kw
+    ci_kwbuild ../build/spec.kw || ci_job_xit=$?
     cp build.log "${CI_ARTIFACTS}/klocwork_build.log"
 popd
 
-rm -rf "$work"
+pushd "${CI_WORK}"
+    find klocwork \( -type d -name obj -prune \) -o \( -type f -print \) | cpio -pmdu "${CI_ARTIFACTS}"
+popd
 
 :
 :

@@ -162,20 +162,15 @@ do
         ci_showfs
     popd
 
-    if ls -ld alljoyn/services/base_tcl/SConstruct
-    then
-        :
-        : START build base_tcl $_variant
-        :
+    :
+    : START build base_tcl $_variant
+    :
 
-        pushd alljoyn/services/base_tcl
-            ci_scons V=$_verbose WS=$_ws EXCLUDE_ONBOARDING=yes VARIANT=$_variant ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
-            ci_showfs
-        popd
-        _ws=off
-    else
-        ci_exit 2 "$ci_job, SConstruct not found in base_tcl. Is tc_reorg present?"
-    fi
+    pushd alljoyn/services/base_tcl
+        ci_scons V=$_verbose WS=$_ws EXCLUDE_ONBOARDING=yes VARIANT=$_variant ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+        ci_showfs
+    popd
+    _ws=off
 
     :
     : START artifacts

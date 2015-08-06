@@ -256,6 +256,8 @@ do
                     : WARNING $ci_job, scons build failed ajtcl $_variant
                     :
                 }
+                # per request, core/test team, 7/23/2015
+                rm -f ajtcl*.so dist/lib/ajtcl*.so
             popd
             ;;
         esac

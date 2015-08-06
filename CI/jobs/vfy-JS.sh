@@ -186,7 +186,7 @@ then
     popd
 else
     :
-    : WARNING no SConstruct in base_tcl / "${CIAJ_CORE_GITREV}"
+    : WARNING no SConstruct in base_tcl / "${CIAJ_SERVICES_GITREV}"
     :
 fi
 
@@ -196,69 +196,61 @@ fi
 :
 
 cd "${WORKSPACE}"
-case "${GERRIT_BRANCH}" in  ### FIXME
-( *reorg )
-    duktape_envname=DUKTAPE_SRC
-    duktape_distsrc=$( ci_natpath "${CI_WORK}/${CIAJ_DUKTAPE}/src" )
-    ;;
-( * )
-    duktape_envname=DUKTAPE_DIST
-    duktape_distsrc=$( ci_natpath "${CI_WORK}/${CIAJ_DUKTAPE}" )
-    ;;
-esac
-
 pushd alljoyn/core/alljoyn-js
     case "${GERRIT_BRANCH}" in
-    ( *reorg )
-        _ALLJOYN_DIST=$( ci_natpath "$ALLJOYN_DISTDIR" )
-        ci_scons V=$_verbose WS=$_ws VARIANT=$_variant $duktape_envname="$duktape_distsrc" ALLJOYN_DIST="$_ALLJOYN_DIST" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
-        ci_showfs
-
-        # do not run a separate scons build in console
-        :
-        : WARNING python debugging console not implemented for ${GERRIT_BRANCH}
-        :
-        ;;
-    ( * )
-        (
-            export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
-            ci_scons V=$_verbose WS=$_ws VARIANT=$_variant $duktape_envname="$duktape_distsrc" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
-        )
+    ( RB15.04 ) # before tc_reorg
+        if [ "$(uname)" = "Linux" -o "$(uname)" = "Darwin" ]; then
+            ci_scons V=$_verbose WS=$_ws VARIANT=$_variant DUKTAPE_DIST="${CI_WORK}/${CIAJ_DUKTAPE}" JSDOCS=true JSDOC_DIR="${JSDOC_DIR}"
+        else    # Windows desktop
+            (
+                export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
+                ci_scons V=$_verbose WS=$_ws VARIANT=$_variant DUKTAPE_DIST="$( ci_natpath "${CI_WORK}/${CIAJ_DUKTAPE}" )" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+            )
+        fi
         ci_showfs
 
         :
-        : START build console
+        : START build console exe
         :
         cd console
         (
             export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
             ci_scons V=$_verbose WS=$_ws VARIANT=$_variant ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
         )
-
-        case "${CIAJ_CORE_SDK}" in
-        ( alljoyn-*-win7*-sdk )
-            :
-            : WARNING python debugging console not implemented
-            :
-            # FIXME - build fails on Jenkins Windows build slave
-            # (
-                # export VS90COMNTOOLS=$VS120COMNTOOLS
-                # export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
-                # python setup.py build
-            # )
-            ;;
-        ( alljoyn-*-linux*-sdk-dbg | alljoyn-*-linux*-sdk-rel )
+        if [ "$(uname)" = "Linux" ]; then
             :
             : START python debugging console
             :
             python setup.py build
-            ;;
-        ( * )
+            ci_showfs
+        else
             :
             : WARNING python debugging console not implemented
             :
-            ;;
-        esac
+        fi
+        ;;
+    ( * )       # after tc_reorg
+        if [ "$(uname)" = "Linux" ]; then
+            ci_scons V=$_verbose WS=$_ws VARIANT=$_variant DUKTAPE_SRC="${CI_WORK}/${CIAJ_DUKTAPE}/src" ALLJOYN_DIST="$ALLJOYN_DISTDIR" JSDOCS=true JSDOC_DIR="${JSDOC_DIR}"
+            pushd console
+                :
+                : START python debugging console
+                :
+                python setup.py build
+                ci_showfs
+            popd
+        elif [ "$(uname)" = "Darwin" ]; then
+            ci_scons V=$_verbose WS=$_ws VARIANT=$_variant DUKTAPE_SRC="${CI_WORK}/${CIAJ_DUKTAPE}/src" ALLJOYN_DIST="$ALLJOYN_DISTDIR" JSDOCS=true JSDOC_DIR="${JSDOC_DIR}"
+            :
+            : WARNING python debugging console not implemented
+            :
+        else    # Windows desktop
+            ci_scons V=$_verbose WS=$_ws VARIANT=$_variant DUKTAPE_SRC="$( ci_natpath "${CI_WORK}/${CIAJ_DUKTAPE}/src" )" ALLJOYN_DIST="$( ci_natpath "$ALLJOYN_DISTDIR" )" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+            :
+            : WARNING python debugging console not implemented
+            :
+        fi
+        ci_showfs
         ;;
     esac
 popd
@@ -277,52 +269,58 @@ rm -rf "$work" "$to"    || : error ignored
 mkdir -p "$work"        || : error ignored
 
 cp alljoyn/manifest.txt "$work"
+
 case "${GERRIT_BRANCH}" in
-( *reorg )
-    pushd alljoyn/core/alljoyn-js/dist/bin
-        cp -p  alljoynjs   "$work" || cp -p  alljoynjs.exe "$work"
-        cp -p  ajs_console "$work" || cp -p  ajs_console.exe "$work"
-    popd
-    ;;
-( * )
+( RB15.04 ) # before tc_reorg
     pushd alljoyn/core/alljoyn-js
+        : executables
         cp -p  alljoynjs   "$work" || cp -p  alljoynjs.exe "$work"
-        cd console
-        cp -p  ajs_console "$work" || cp -p  ajs_console.exe "$work"
+        pushd console
+            cp -p  ajs_console "$work" || cp -p  ajs_console.exe "$work"
+        popd
+        : miscellany from src tree
+        cp -rp js          "$work"
+        cp -rp tools       "$work"
+        cp -rp doc         "$work"
     popd
+    if [ "$(uname)" = "Linux" ]; then
+        : python debugging console shared lib
+        mkdir "$work/lib" || : ok
+        cp -p alljoyn/core/alljoyn-js/console/build/lib.*/AJSConsole.so "$work/lib"
+    fi
+    ;;
+( * )       # after tc_reorg
+    pushd alljoyn/core/alljoyn-js/dist
+        : start with "dist" tree
+        cp -rp *    "$work"
+    popd
+    pushd alljoyn/core/alljoyn-js
+        : miscellany from src tree
+        cp -rp js       "$work"
+        cp -rp tools    "$work"
+        cp -rp doc      "$work"
+    popd
+    if [ "$(uname)" = "Linux" ]; then
+        : python debugging console shared lib
+        mkdir "$work/lib" || : ok
+        cp -p alljoyn/core/alljoyn-js/console/build/lib.*/AJSConsole.so "$work/lib"
+    fi
     ;;
 esac
-pushd alljoyn/core/alljoyn-js
-    cp -rp js          "$work"
-    cp -rp tools       "$work"
-popd
 
 case "${CIAJ_CORE_SDK}" in
 ( alljoyn-*-linux*-sdk-dbg | alljoyn-*-linux*-sdk-rel )
     :
-    : alljoyn shared libs for linux
+    : alljoyn core shared libs for linux
     :
-    mkdir "$work/lib"
-
-    case "${GERRIT_BRANCH}" in
-    ( *reorg )
-        :
-        : WARNING python debugging console not implemented
-        :
-        ;;
-    ( * )
-        pushd alljoyn/core/alljoyn-js/console/build
-            cp lib*/AJSConsole.so "$work/lib"
-        popd
-        ;;
-    esac
+    mkdir "$work/lib" || : ok
 
     pushd "${ALLJOYN_DISTDIR}"
         for i in about/lib/liballjoyn_about.so cpp/lib/liballjoyn.so ; do
             cp -p $i "$work/lib" || : not fatal yet
         done
         pushd "$work/lib"
-            ls -l liballjoyn* || ci_exit 2 $ci_job, "liballjoyn* (shared libs) not found in AJ Std Core SDK"
+            ls -ld liballjoyn* || ci_exit 2 $ci_job, "liballjoyn* (shared libs) not found in AJ Std Core SDK"
         popd
     popd
     ;;

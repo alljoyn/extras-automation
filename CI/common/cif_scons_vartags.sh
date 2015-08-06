@@ -113,14 +113,11 @@ ci_thin_scons_vartags() {
     esac
 
     case "${GERRIT_BRANCH}" in
-    ( *reorg )
-        local thin_dist=${PWD}/dist
-        ;;
-    ( RB14.12 | RB15.04 | master )
+    ( RB14.?? | RB15.04 )
         local thin_dist=${PWD}
         ;;
     ( * )
-        local thin_dist=
+        local thin_dist=${PWD}/dist
         ;;
     esac
 

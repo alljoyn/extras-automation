@@ -26,6 +26,7 @@ echo >&2 + : BEGIN xyz/cif_kwbuild.sh
 
 ci_kwbuild() {
     local _xet="$-"
+    local _xit=0
 
     : ci_kwbuild "$@"
 
@@ -74,8 +75,9 @@ ci_kwbuild() {
     HOMEPATH=${CI_FORCE_HOMEPATH} \
     USERPROFILE=${CI_FORCE_USERPROFILE} \
     LOCALAPPDATA=${CI_FORCE_LOCALAPPDATA} \
-        kwbuildproject --url "${CIXYZ_KLOCWORK_URL}/$klocwork_project" --tables-directory . "$( ci_natpath "$buildspec" )"
+        kwbuildproject --url "${CIXYZ_KLOCWORK_URL}/$klocwork_project" --tables-directory . "$( ci_natpath "$buildspec" )" || _xit=$?
     ci_showfs
+    case "$_xit" in ( 0 ) ;; ( * ) : ERROR ci_kwbuild, kwbuildproject ; return 2 ;; esac
 
     :
     : START kwadmin load
@@ -85,7 +87,8 @@ ci_kwbuild() {
     HOMEPATH=${CI_FORCE_HOMEPATH} \
     USERPROFILE=${CI_FORCE_USERPROFILE} \
     LOCALAPPDATA=${CI_FORCE_LOCALAPPDATA} \
-        kwadmin --url "${CIXYZ_KLOCWORK_URL}/" load --name "${BUILD_TAG}" "$klocwork_project" .
+        kwadmin --url "${CIXYZ_KLOCWORK_URL}/" load --name "${BUILD_TAG}" "$klocwork_project" . || _xit=$?
+    case "$_xit" in ( 0 ) ;; ( * ) : ERROR ci_kwbuild, kwadmin load ; return 2 ;; esac
 
     case "$_xet" in ( *x* ) set -x ;; ( * ) set +x ;; esac
 }

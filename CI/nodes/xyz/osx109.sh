@@ -54,7 +54,7 @@ ci_ck_found CIXYZ_SHOPT CIXYZ_SHOPT_NODE
     # common AllJoyn scons build resources installed on this node
 
 unset GECKO_BASE
-unset JSDOC_DIR
+export JSDOC_DIR=/usr/local/lib/node_modules/jsdoc
 export GTEST_DIR="${CIXYZ_SHOPT_NODE}/gtest-1.7.0"
 
 unset JAVA_HOME
@@ -63,7 +63,7 @@ unset CLASSPATH
 unset JAVA6BOOT
 export OPENSSL_ROOT="${CIXYZ_SHOPT_NODE}/openssl-1.0.1m"
 
-ci_ck_found GTEST_DIR OPENSSL_ROOT
+ci_ck_found JSDOC_DIR GTEST_DIR OPENSSL_ROOT
 
 case "${CIAJ_OS}" in
 ( android )

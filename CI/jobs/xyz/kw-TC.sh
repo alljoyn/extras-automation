@@ -47,7 +47,7 @@ mkdir -p "${CI_WORK}/klocwork/build"
 mkdir -p "${CI_WORK}/klocwork/tables"
 
 pushd alljoyn/core/ajtcl
-    ci_kwinject --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
+    ci_kwinject --ignore-files 'conftest*.*' --output "$( ci_natpath "${CI_WORK}/klocwork/build/spec.kw" )" \
         scons WS=off VARIANT=debug \
         GTEST_DIR="$( ci_natpath "$GTEST_DIR" )" \
         ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
@@ -57,8 +57,12 @@ popd
 ls -la "${CI_WORK}/klocwork/build"
 
 pushd "${CI_WORK}/klocwork/tables"
-    ci_kwbuild ../build/spec.kw
+    ci_kwbuild ../build/spec.kw || ci_job_xit=$?
     cp build.log "${CI_ARTIFACTS}/klocwork_build.log"
+popd
+
+pushd "${CI_WORK}"
+    find klocwork \( -type d -name obj -prune \) -o \( -type f -print \) | cpio -pmdu "${CI_ARTIFACTS}"
 popd
 
 :

@@ -41,7 +41,7 @@ ci_ck_found CIXYZ_SHOPT CIXYZ_SHOPT_NODE
     # common AllJoyn scons build resources installed on this node
 
 export GECKO_BASE=/opt/xulrunner-sdk
-export JSDOC_DIR=/opt/jsdoc-3.3.0-alpha9
+export JSDOC_DIR=/usr/lib/node_modules/jsdoc
 export GTEST_DIR=${CIXYZ_SHOPT_NODE}/gtest-1.7.0
 
 export JAVA_HOME=/opt/java/jdk1.7.0_67
