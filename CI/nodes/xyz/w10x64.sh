@@ -14,13 +14,13 @@
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 # Xyzcity- AllJoyn- and Jenkins node-specific additions and overrides to ci_setenv
-# ci_node_type=w2012 (Microsoft Windows Server 2012, with either MSYSGit or Cygwin)
+# ci_node_type=w10x64 (Microsoft Windows 10 with either MSYSGit or Cygwin)
 
 case "$ci_xet" in
 ( "" )
     # ci_xet is undefined, so process this file
 
-echo >&2 + : BEGIN xyz/w2012.sh
+echo >&2 + : BEGIN xyz/w10x64.sh
 
 source "${CI_COMMON_PART}/xyz/ci_setenv.sh"
 
@@ -42,11 +42,11 @@ ci_ck_found CIXYZ_SHOPT CIXYZ_SHOPT_NODE
 
 unset GECKO_BASE
 unset JSDOC_DIR
-export GTEST_DIR=${CIXYZ_SHOPT_NODE}/gtest-1.7.0
+export GTEST_DIR=/c/Install/gtest-1.7.0
 
 # JAVA_HOME= see below
-export ANT_HOME=/c/Install/apache-ant-1.8.2
-export CLASSPATH=/c/Install/Java/lib/junit-4.8.2.jar
+export ANT_HOME=/c/Install/apache-ant-1.9.6
+export CLASSPATH=/c/Install/Java/lib/junit-4.12.jar
 unset JAVA6_BOOT
 unset OPENSSL_ROOT
 
@@ -62,43 +62,31 @@ case "${CIAJ_OS}" in
     ;;
 esac
 
-export IARBUILD=/c/Install/IAR/EW7.0/common/bin/IarBuild.exe
-export EFM32_DIR=/c/Install/IAR/efm32-leopardgecko
+unset  IARBUILD
+unset  EFM32_DIR
 export DOXYGEN_HOME=/c/Install/doxygen
 export GRAPHVIZ_HOME=/c/Install/Graphviz2.38
 
 _doxygen_bin=$DOXYGEN_HOME/bin
 _dot_bin=$GRAPHVIZ_HOME/bin
-_kwbin=/c/Klocwork/Server10.0/install/bin
 
 _uncrustify_061=${CIXYZ_SHOPT_NODE}/uncrustify-0.61/bin/uncrustify.exe
-_uncrustify_057=/c/Install/uncrustify-0.57-win32/uncrustify.exe
+_uncrustify_bin=$( dirname "$_uncrustify_061" )
 
-case "${GERRIT_BRANCH}" in
-( RB14.* )
-    "$_uncrustify_057" --version
-    _uncrustify_bin=$( dirname "$_uncrustify_057" )
-    ;;
-( * )
-    "$_uncrustify_061" --version
-    _uncrustify_bin=$( dirname "$_uncrustify_061" )
-    ;;
-esac
-
-ci_ck_found IARBUILD EFM32_DIR _doxygen_bin _dot_bin _uncrustify_bin _kwbin
+ci_ck_found _doxygen_bin _dot_bin _uncrustify_bin
 
     # use the Java that goes with the given scons CPU type
 
 case "${CIAJ_CPU}" in
-( *64* )    export JAVA_HOME=/c/Install/Java/x64/jdk1.7.0_55 ;;
-( *86* )    export JAVA_HOME=/c/Install/Java/x86/jdk1.7.0_55 ;;
-( * )       export JAVA_HOME=/c/Install/Java/x64/jdk1.7.0_55 ;;
+( *64* )    export JAVA_HOME=/c/Install/Java/x64/jdk1.7.0_79 ;;
+( *86* )    export JAVA_HOME=/c/Install/Java/x86/jdk1.7.0_79 ;;
+( * )       export JAVA_HOME=/c/Install/Java/x64/jdk1.7.0_79 ;;
 esac
 ci_ck_found JAVA_HOME
 
     # set final PATH
 
-export PATH=$ANT_HOME/bin:$JAVA_HOME/bin:$_doxygen_bin:$_dot_bin:$_uncrustify_bin:$_kwbin:$PATH
+export PATH=$ANT_HOME/bin:$JAVA_HOME/bin:$_doxygen_bin:$_dot_bin:$_uncrustify_bin:$PATH
 
 case "${CI_SHELL_W}" in
 ( "" )  # not Windows
@@ -109,7 +97,7 @@ case "${CI_SHELL_W}" in
 
     cat <<EOF | sed -e 's/$/\r/' >> "${CI_WORK}/ci_setenv.bat"
 
-    REM xyz/w2012.sh
+    REM xyz/w10x64.sh
 
 $(
     declare -Fx | sed -e 's,^.* ,,' | while read -r i
@@ -120,7 +108,7 @@ $(
         esac
     done
 )
-set PATH=$( ci_natpath "$ANT_HOME/bin" );$( ci_natpath "$JAVA_HOME/bin" );$( ci_natpath "$_kwbin" );$( ci_natpath "$_doxygen_bin" );$( ci_natpath "$_dot_bin" );$( ci_natpath "$_uncrustify_bin" );%PATH%
+set PATH=$( ci_natpath "$ANT_HOME/bin" );$( ci_natpath "$JAVA_HOME/bin" );$( ci_natpath "$_doxygen_bin" );$( ci_natpath "$_dot_bin" );$( ci_natpath "$_uncrustify_bin" );%PATH%
 set ANT_HOME=$( ci_natpath "$ANT_HOME" )
 set CLASSPATH=$( ci_natpath "$CLASSPATH" )
 set JAVA_HOME=$( ci_natpath "$JAVA_HOME" )
@@ -129,8 +117,6 @@ set GTEST_DIR=$( ci_natpath "$GTEST_DIR" )
 set CIXYZ_SHARE=$( ci_natpath "${CIXYZ_SHARE}" )
 set CIXYZ_SHOPT=$( ci_natpath "${CIXYZ_SHARE}/opt" )
 set CIXYZ_SHOPT_NODE=$( ci_natpath "${CIXYZ_SHOPT}/node_types/${CI_NODETYPE}" )
-set IARBUILD=$( ci_natpath "$IARBUILD" )
-set EFM32_DIR=$( ci_natpath "$EFM32_DIR" )
 set DOXYGEN_HOME=$( ci_natpath "$DOXYGEN_HOME" )
 set GRAPHVIZ_HOME=$( ci_natpath "$GRAPHVIZ_HOME" )
 set CIXYZ_TEST_TOOLS=$( ci_natpath "$CIXYZ_TEST_TOOLS" )
@@ -150,7 +136,7 @@ esac
         # end processing this file
 ci_savenv
 case "$ci_xet" in ( *x* ) set -x ;; ( * ) set +x ;; esac
-echo >&2 + : END xyz/w2012.sh
+echo >&2 + : END xyz/w10x64.sh
     ;;
 ( * )
     # ci_xet is already defined, so skip this file

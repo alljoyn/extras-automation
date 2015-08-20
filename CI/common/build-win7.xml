@@ -9,9 +9,7 @@
     <property name="workingDir"             location="${user.dir}" />
 
     <property name="releaseVersion"         value="0.0.1" />
-    <property name="scons.os"               value="win7" />
     <property name="scons.cpu"              value="x86_64" />
-    <property name="scons.msvc"             value="11" />
     <condition property="msvsTag" value="vs2010" >
         <contains string="${scons.msvc}" substring="10" />
     </condition>
@@ -21,10 +19,13 @@
     <condition property="msvsTag" value="vs2013" >
         <contains string="${scons.msvc}" substring="12" />
     </condition>
+    <condition property="msvsTag" value="vs2015" >
+        <contains string="${scons.msvc}" substring="14" />
+    </condition>
     <condition property="cpuTag" value="x64" else="x86" >
         <contains string="${scons.cpu}" substring="64" />
     </condition>
-    <property name="sdkName"                value="alljoyn-${releaseVersion}-win7${cpuTag}${msvsTag}-sdk" />
+    <property name="sdkName"                value="alljoyn-${releaseVersion}-${scons.os}${cpuTag}${msvsTag}-sdk" />
 
     <property name="sconsDir"               location="${workingDir}" />
     <property name="sconsDist.dbg"          location="${sconsDir}/build/${scons.os}/${scons.cpu}/debug/dist" />
@@ -113,8 +114,10 @@ doManifest      ${doManifest}
 
 releaseVersion  ${releaseVersion}
 sdkDir          ${sdkDir}
-sdkZip          ${sdkZip}</echo>
+sdkZip          ${sdkZip}
 
+scons.msvc      ${scons.msvc}
+msvsTag         ${msvsTag}</echo>
         <echo level="verbose" >
 basedir         ${basedir}
 workingDir      ${workingDir}

@@ -133,7 +133,7 @@ EoF
             ;;
         esac
         ;;
-    ( win7 )
+    ( win7 | win10 )
         case "$_br" in ( [Oo][Ff][Ff] ) ci_exit 2 ci_core_junits, BR=off not supported for "$_os" ;; esac
         ready_daemon=F
         ready_address=null:

@@ -84,6 +84,7 @@ case "${CIAJ_CORE_SDK}" in
     export ALLJOYN_DISTDIR=${CI_SCRATCH}/${CIAJ_CORE_SDK}
     ;;
 esac
+export ALLJOYN_DIST="$ALLJOYN_DISTDIR"  # the env var name changed after tc_reorg
 
 ci_savenv
 case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) ci_showfs ;; esac
@@ -223,15 +224,26 @@ pushd alljoyn/core/alljoyn-js
             :
             python setup.py build
             ci_showfs
-        else
+        elif [ "$(uname)" = "Darwin" ]; then
             :
             : WARNING python debugging console not implemented
             :
+        else    # Windows desktop
+            :
+            : START python debugging console
+            :
+            (
+                export ALLJOYN_DISTDIR=$( ci_natpath "$ALLJOYN_DISTDIR" )
+                export PATH=/c/Python34:$PATH   # custom hack Python version works w MSVS version > 2010
+                export MSVC_VERSION=${CIAJ_MSVC_VERSION}
+                python34 setup.py build
+            )
+            ci_showfs
         fi
         ;;
     ( * )       # after tc_reorg
         if [ "$(uname)" = "Linux" ]; then
-            ci_scons V=$_verbose WS=$_ws VARIANT=$_variant DUKTAPE_SRC="${CI_WORK}/${CIAJ_DUKTAPE}/src" ALLJOYN_DIST="$ALLJOYN_DISTDIR" JSDOCS=true JSDOC_DIR="${JSDOC_DIR}"
+            ci_scons V=$_verbose WS=$_ws VARIANT=$_variant DUKTAPE_SRC="${CI_WORK}/${CIAJ_DUKTAPE}/src" ALLJOYN_DIST="$ALLJOYN_DIST" JSDOCS=true JSDOC_DIR="${JSDOC_DIR}"
             pushd console
                 :
                 : START python debugging console
@@ -240,15 +252,27 @@ pushd alljoyn/core/alljoyn-js
                 ci_showfs
             popd
         elif [ "$(uname)" = "Darwin" ]; then
-            ci_scons V=$_verbose WS=$_ws VARIANT=$_variant DUKTAPE_SRC="${CI_WORK}/${CIAJ_DUKTAPE}/src" ALLJOYN_DIST="$ALLJOYN_DISTDIR" JSDOCS=true JSDOC_DIR="${JSDOC_DIR}"
+            ci_scons V=$_verbose WS=$_ws VARIANT=$_variant DUKTAPE_SRC="${CI_WORK}/${CIAJ_DUKTAPE}/src" ALLJOYN_DIST="$ALLJOYN_DIST" JSDOCS=true JSDOC_DIR="${JSDOC_DIR}"
             :
             : WARNING python debugging console not implemented
             :
         else    # Windows desktop
-            ci_scons V=$_verbose WS=$_ws VARIANT=$_variant DUKTAPE_SRC="$( ci_natpath "${CI_WORK}/${CIAJ_DUKTAPE}/src" )" ALLJOYN_DIST="$( ci_natpath "$ALLJOYN_DISTDIR" )" ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
-            :
-            : WARNING python debugging console not implemented
-            :
+            ci_scons V=$_verbose WS=$_ws VARIANT=$_variant DUKTAPE_SRC="$( ci_natpath "${CI_WORK}/${CIAJ_DUKTAPE}/src" )" ALLJOYN_DIST=$( ci_natpath "$ALLJOYN_DIST" )  ${CIAJ_MSVC_VERSION:+MSVC_VERSION=}${CIAJ_MSVC_VERSION}
+            pushd console
+                :
+                : WARNING - FIXME - temporarily disabled python debugging console build on Windows for master branch
+                :
+            #   :
+            #   : START python debugging console
+            #   :
+            #   (
+            #       export ALLJOYN_DIST=$( ci_natpath "$ALLJOYN_DIST" )
+            #       export PATH=/c/Python34:$PATH   # custom hack Python version works w MSVS version > 2010
+            #       export MSVC_VERSION=${CIAJ_MSVC_VERSION}
+            #       python34 setup.py build
+            #   )
+            #   ci_showfs
+            popd
         fi
         ci_showfs
         ;;
@@ -287,6 +311,13 @@ case "${GERRIT_BRANCH}" in
         : python debugging console shared lib
         mkdir "$work/lib" || : ok
         cp -p alljoyn/core/alljoyn-js/console/build/lib.*/AJSConsole.so "$work/lib"
+    elif [ "$(uname)" = "Darwin" ]; then
+        : python debugging console not implemented
+    else    # Windows desktop
+        : python debugging console - who knows?!
+        mkdir "$work/site-packages" || : ok
+        cp -p alljoyn/core/alljoyn-js/console/build/lib.*/AJSConsole.pyd    "$work/site-packages"
+        cp -p alljoyn/core/alljoyn-js/console/site-packages/console/AJS*Console*.egg-info   "$work/site-packages" || : nice try though
     fi
     ;;
 ( * )       # after tc_reorg
@@ -304,6 +335,14 @@ case "${GERRIT_BRANCH}" in
         : python debugging console shared lib
         mkdir "$work/lib" || : ok
         cp -p alljoyn/core/alljoyn-js/console/build/lib.*/AJSConsole.so "$work/lib"
+    elif [ "$(uname)" = "Darwin" ]; then
+        : python debugging console not implemented
+    else    # Windows desktop
+        : FIXME - disabled python debugging console build on Windows for master branch
+    #   : python debugging console - who knows?!
+    #   mkdir "$work/site-packages" || : ok
+    #   cp -p alljoyn/core/alljoyn-js/console/build/lib.*/AJSConsole.pyd    "$work/site-packages"
+    #   cp -p alljoyn/core/alljoyn-js/console/site-packages/AJS*Console*.egg-info   "$work/site-packages" || : nice try though
     fi
     ;;
 esac

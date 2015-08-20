@@ -25,7 +25,7 @@ source "${CI_NODESCRIPTS_PART}.sh"
 case "${CI_UP1}" in ( "" ) ci_exit 2 $ci_job, no upstream job artifacts found ;; esac
 
 case "${CIAJ_OS}" in
-( linux | win7 )
+( linux | win7 | win10 )
     source "${CI_COMMON}/cif_core_gtests.sh"
     source "${CI_COMMON}/cif_core_junits.sh"
     ;;
@@ -86,7 +86,7 @@ do
         ls -ld     alljoyn/core/alljoyn/build/${CIAJ_OS}/${CIAJ_CPU}/$_variant/$ziptag > /dev/null  || ci_exit 2 $ci_job, missing upstream artifact "*-$ziptag-$vartag.zip"
     done
     case "${CIAJ_OS}" in
-    ( linux | win7 )
+    ( linux | win7 | win10 )
         pushd alljoyn/core/alljoyn
             :
             : google tests $vartag

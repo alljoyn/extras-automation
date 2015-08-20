@@ -60,12 +60,12 @@ done
 :
 cd "${WORKSPACE}"
 case "${CIAJ_OS}" in
-( win7 )
+( win7 | win10 )
     :
     : START SDK
     :
     date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
-    ant -f "$( ci_natpath "${CI_COMMON}/build-win7.xml" )" $_verbose -Dscons.cpu="${CIAJ_CPU}" -Dscons.msvc="${CIAJ_MSVC_VERSION%%.*}" \
+    ant -f "$( ci_natpath "${CI_COMMON}/build-win7.xml" )" $_verbose -Dscons.os="${CIAJ_OS}" -Dscons.cpu="${CIAJ_CPU}" -Dscons.msvc="${CIAJ_MSVC_VERSION%%.*}" \
         -DsdkWork="$( ci_natpath "${CI_ARTIFACTS_SCRATCH}" )" -DsconsDir="$( ci_natpath "${WORKSPACE}/alljoyn/core/alljoyn" )" -DsdkName="${CI_ARTIFACT_NAME}-sdk"
     mv -f "${CI_ARTIFACTS_SCRATCH}/${CI_ARTIFACT_NAME}-sdk.zip" "${CI_ARTIFACTS}"
     ;;

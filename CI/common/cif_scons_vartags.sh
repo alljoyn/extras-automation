@@ -38,7 +38,7 @@ ci_scons_vartags() {
 
     local vartag cputag
 
-    case "$_os" in ( linux | android | darwin | win7 ) ;; ( * ) ci_exit 2 ci_scons_vartags, OS="$_os" ;; esac
+    case "$_os" in ( linux | android | darwin | win7 | win10 ) ;; ( * ) ci_exit 2 ci_scons_vartags, OS="$_os" ;; esac
     case "$_variant" in
     ( debug )   vartag=dbg ;;
     ( release ) vartag=rel ;;

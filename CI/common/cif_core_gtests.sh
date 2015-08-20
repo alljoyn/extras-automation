@@ -185,7 +185,7 @@ EoF
         ready_daemon=F
         ready_address=null:
         ;;
-    ( win7 )
+    ( win7 | win10 )
             # FIXME : ajtcltest should support BR=off
         case "$_br" in ( [Oo][Ff][Ff] ) ci_exit 2 ci_core_gtests, BR=off not supported for "$_os" ;; esac
         ready_daemon=F

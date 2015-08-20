@@ -27,7 +27,7 @@ source "${CI_COMMON}/cif_scons_vartags.sh"
 source "${CI_COMMON}/cif_core_sconsbuilds.sh"
 
 case "${CIAJ_OS}" in
-( linux | win7 )
+( linux | win7 | win10 )
     source "${CI_COMMON}/cif_core_gtests.sh"
     source "${CI_COMMON}/cif_core_junits.sh"
     ;;
@@ -62,7 +62,7 @@ pushd alljoyn/core/alljoyn
 popd
 
 case "${CIAJ_OS}" in
-( linux | win7 )
+( linux | win7 | win10 )
     pushd alljoyn/core/alljoyn
         :
         : google tests
