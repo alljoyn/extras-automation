@@ -34,6 +34,7 @@
     <property name="sdkWork"                location="${workingDir}/sdks" />
     <property name="sdkDir"                 location="${sdkWork}/${sdkName}" />
     <property name="sdkZip"                 location="${sdkWork}/${sdkName}.zip" />
+    <property name="sdkToc"                 location="${sdkWork}/${sdkName}.txt" />
     <property name="sdkDist.dbg"            location="${sdkDir}/${sdkName}-dbg" />
     <property name="sdkDist.rel"            location="${sdkDir}/${sdkName}-rel" />
 
@@ -101,6 +102,68 @@
         </sequential>
     </macrodef> <!-- xcpExtras -->
 
+    <macrodef name="xSpecial" description="special purpose" >
+        <attribute name="argv1" description="upper dir" />
+        <attribute name="argv2" description="lower dir" />
+        <attribute name="argv3" description="output property name" />
+        <sequential>
+
+            <local name="argv1.parent" />
+            <dirname property="argv1.parent" file="@{argv1}" />
+
+            <delete file="${sdkTmp}" />
+            <echo force="true" file="${sdkTmp}">@{argv2}</echo>
+
+            <loadfile property="@{argv3}" srcFile="${sdkTmp}">
+                <filterchain>
+                    <tokenfilter>
+                        <replacestring from="${argv1.parent}${file.separator}" to="" />
+                        <replacestring from="${file.separator}" to="/" />
+                    </tokenfilter>
+                </filterchain>
+            </loadfile>
+            <delete file="sdkTmp" />
+
+        </sequential>
+    </macrodef> <!-- xSpecial -->
+
+    <macrodef name="xToc" description="Generate a list of files contained in the sdk" >
+        <attribute name="argv1" description="from path" />
+        <attribute name="argv2" description="to file" />
+        <attribute name="argv3" description="absolute path to replace in the output list" />
+        <attribute name="argv4" description="symbolic replacement for argv3 in the output list" />
+        <attribute name="argv5" description="extra fileset element to include" default="**/docs/html/index.html" />
+        <element name="fileset-elements" implicit="yes"/>
+        <sequential>
+
+            <echo level="verbose" message="xtoc @{argv1} @{argv2} @{argv3} @{argv4}" />
+
+            <local name="xtoct" />
+            <local name="xtocp" />
+            <xSpecial argv1="@{argv1}" argv2="@{argv3}" argv3="xtocp" />
+
+            <pathconvert property="xtoct" pathsep="${line.separator}" dirsep="/" >
+                <sort>
+                    <union>
+                        <fileset dir="@{argv1}" >
+                            <fileset-elements/>
+                            <exclude name="**/docs/html/**" />
+                        </fileset>
+                        <fileset dir="@{argv1}" >
+                            <include name="@{argv5}" />
+                        </fileset>
+                    </union>
+                    <name />
+                </sort>
+                <map from="@{argv3}/" to="$@{argv4}/" />
+            </pathconvert>
+
+            <echo level="verbose" >xtoct:${line.separator}#@{argv4}=${xtocp}${line.separator}${xtoct}${line.separator}</echo>
+            <echo file="@{argv2}" force="true" append="true" >#@{argv4}=${xtocp}${line.separator}${xtoct}${line.separator}</echo>
+
+        </sequential>
+    </macrodef> <!-- xToc -->
+
     <!-- targets -->
 
     <target name="init" >
@@ -115,6 +178,7 @@ doManifest      ${doManifest}
 releaseVersion  ${releaseVersion}
 sdkDir          ${sdkDir}
 sdkZip          ${sdkZip}
+sdkToc          ${sdkToc}
 
 scons.msvc      ${scons.msvc}
 msvsTag         ${msvsTag}</echo>
@@ -135,6 +199,7 @@ sdkDir          ${sdkDir}
 sdkDist.dbg     ${sdkDist.dbg}
 sdkDist.rel     ${sdkDist.rel}
 sdkZip          ${sdkZip}
+sdkToc          ${sdkToc}
 
 genversion      ${genversion}
 manifest.dbg    ${manifest.dbg}
@@ -226,6 +291,7 @@ gitVersion  ${gitVersion}
         <mkdir dir="${sdkZip.parent}" />
         <delete dir="${sdkDir}" />
         <delete file="${sdkZip}" />
+        <delete file="${sdkToc}" />
     </target>
 
     <target name="dist" depends="clean" >
@@ -238,7 +304,27 @@ gitVersion  ${gitVersion}
         <xcpExtras argv1="${sdkDist.rel}" />
     </target>
 
-    <target name="zip" depends="extras" >
+    <target name="toc" depends="extras" >
+        <local name="sdkDist.dbg.parent" />
+        <local name="sdkDist.dbg.name" />
+        <dirname property="sdkDist.dbg.parent" file="${sdkDist.dbg}" />
+        <basename property="sdkDist.dbg.name" file="${sdkDist.dbg}" />
+        <local name="sdkDist.rel.parent" />
+        <local name="sdkDist.rel.name" />
+        <dirname property="sdkDist.rel.parent" file="${sdkDist.rel}" />
+        <basename property="sdkDist.rel.name" file="${sdkDist.rel}" />
+
+        <delete file="${sdkToc}" />
+        <xToc argv1="${sdkDist.dbg.parent}" argv2="${sdkToc}" argv3="${sdkDist.dbg}" argv4="DIST_dbg" argv5="${sdkDist.dbg.name}/**/docs/html/index.html" >
+            <include name="${sdkDist.dbg.name}/**" />
+        </xToc>
+        <xToc argv1="${sdkDist.rel.parent}" argv2="${sdkToc}" argv3="${sdkDist.rel}" argv4="DIST_rel" argv5="${sdkDist.rel.name}/**/docs/html/index.html" >
+            <include name="${sdkDist.rel.name}/**" />
+        </xToc>
+        <echo>${sdkToc} is ready</echo>
+    </target>
+
+    <target name="zip" depends="toc" >
         <local name="sdkDir.name" />
         <basename property="sdkDir.name" file="${sdkDir}" />
         <zip destfile="${sdkZip}" whenempty="fail" duplicate="fail" encoding="UTF-8" createUnicodeExtraFields="always" >

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="Compare contents of two SDKs using Toc files" default="default">
+
+    <macrodef name="xLoad" description="Load contents of SDK (file list) from Toc file into Ant resource collection" >
+        <attribute name="argv1" description="input Toc file name" />
+        <attribute name="argv2" description="output Ant resource collection refid name" />
+        <sequential>
+
+            <local name="xload.t" />
+            <loadfile property="xload.t" srcFile="@{argv1}">
+                <filterchain>
+                    <tokenfilter>
+                        <containsregex pattern="^\$" />
+                        <ignoreblank/>
+                    </tokenfilter>
+                </filterchain>
+            </loadfile>
+
+            <fail message="@{argv1} file empty or invalid" status="2" >
+                <condition>
+                    <not>
+                        <isset property="xload.t" />
+                    </not>
+                </condition>
+            </fail>
+
+            <resources id="@{argv2}">
+                <tokens>
+                    <string value="${xload.t}" />
+                    <linetokenizer includeDelims="true" />
+                </tokens>
+            </resources>
+        </sequential>
+    </macrodef> <!-- xLoad -->
+
+    <fail message="Error, tocfile.ref and tocfile.new properties are required" status="2" >
+        <condition>
+            <not>
+                <and>
+                    <isset property="tocfile.ref" />
+                    <isset property="tocfile.new" />
+                </and>
+            </not>
+        </condition>
+    </fail>
+
+    <target name="init" >
+
+        <echo>tocfile.ref     ${tocfile.ref}</echo>
+        <echo>tocfile.new     ${tocfile.new}</echo>
+
+        <fail message="${tocfile.ref} file not found" status="2" >
+            <condition>
+                <not>
+                    <available file="${tocfile.ref}" type="file" />
+                </not>
+            </condition>
+        </fail>
+
+        <fail message="${tocfile.new} file not found" status="2" >
+            <condition>
+                <not>
+                    <available file="${tocfile.new}"    type="file" />
+                </not>
+            </condition>
+        </fail>
+
+        <xLoad argv1="${tocfile.ref}" argv2="toc.ref" />
+        <xLoad argv1="${tocfile.new}" argv2="toc.new" />
+
+        <difference id="difference"><resources refid="toc.ref"/><resources refid="toc.new"/></difference>
+        <condition property="differences.found">
+            <not>
+                <resourcecount refid="difference" count="0" />
+            </not>
+        </condition>
+
+    </target> <!-- init -->
+
+    <target name="default" depends="init" if="differences.found" description="Fail the build if tocfile.new content is different than tocfile.ref" >
+
+        <intersect id="toc.ref.only"><resources refid="toc.ref"/><resources refid="difference"/></intersect>
+        <intersect id="toc.new.only"><resources refid="toc.new"/><resources refid="difference"/></intersect>
+
+        <echo>${line.separator}only in ${tocfile.ref}:${line.separator}${line.separator}</echo>
+        <concat><resources refid="toc.ref.only"></resources></concat>
+        <echo>${line.separator}only in ${tocfile.new}:${line.separator}${line.separator}</echo>
+        <concat><resources refid="toc.new.only"></resources></concat>
+
+        <fail message="contents are different!" status="2" />
+
+    </target> <!-- test -->
+
+</project>
