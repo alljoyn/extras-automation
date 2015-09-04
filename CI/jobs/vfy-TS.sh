@@ -179,7 +179,7 @@ do
     cd "${WORKSPACE}"
 
     zip=${CI_ARTIFACT_NAME}-$_os-$cputag-dist-$vartag
-    work=${CI_ARTIFACTS_SCRATCH}/$zip
+    work=${CI_SCRATCH_ARTIFACTS}/$zip
     to=${CI_ARTIFACTS}/$zip.zip
 
     rm -rf "$work" "$to"    || : error ignored

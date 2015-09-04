@@ -286,7 +286,7 @@ popd
 cd "${WORKSPACE}"
 
 zip=${CI_ARTIFACT_NAME}-$_vartag
-work=${CI_ARTIFACTS_SCRATCH}/$zip
+work=${CI_SCRATCH_ARTIFACTS}/$zip
 to=${CI_ARTIFACTS}/$zip.zip
 
 rm -rf "$work" "$to"    || : error ignored
@@ -311,6 +311,8 @@ case "${GERRIT_BRANCH}" in
         : python debugging console shared lib
         mkdir "$work/lib" || : ok
         cp -p alljoyn/core/alljoyn-js/console/build/lib.*/AJSConsole.so "$work/lib"
+        : ajtcl shared lib
+        cp -p alljoyn/core/ajtcl/libajtcl.so "$work/lib"
     elif [ "$(uname)" = "Darwin" ]; then
         : python debugging console not implemented
     else    # Windows desktop
@@ -335,6 +337,10 @@ case "${GERRIT_BRANCH}" in
         : python debugging console shared lib
         mkdir "$work/lib" || : ok
         cp -p alljoyn/core/alljoyn-js/console/build/lib.*/AJSConsole.so "$work/lib"
+        : ajtcl shared lib
+        cp -p alljoyn/core/ajtcl/dist/lib/libajtcl.so "$work/lib"
+        : base_tcl shared lib
+        cp -p alljoyn/services/base_tcl/dist/lib/libajtcl_services.so "$work/lib"
     elif [ "$(uname)" = "Darwin" ]; then
         : python debugging console not implemented
     else    # Windows desktop

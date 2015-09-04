@@ -66,8 +66,11 @@ case "${CIAJ_OS}" in
     :
     date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
     ant -f "$( ci_natpath "${CI_COMMON}/build-win7.xml" )" $_verbose -Dscons.os="${CIAJ_OS}" -Dscons.cpu="${CIAJ_CPU}" -Dscons.msvc="${CIAJ_MSVC_VERSION%%.*}" \
-        -DsdkWork="$( ci_natpath "${CI_ARTIFACTS_SCRATCH}" )" -DsconsDir="$( ci_natpath "${WORKSPACE}/alljoyn/core/alljoyn" )" -DsdkName="${CI_ARTIFACT_NAME}-sdk"
-    mv -f "${CI_ARTIFACTS_SCRATCH}/${CI_ARTIFACT_NAME}-sdk.zip" "${CI_ARTIFACTS}"
+        -DsdkWork="$( ci_natpath "${CI_SCRATCH_ARTIFACTS}" )" -DsconsDir="$( ci_natpath "${WORKSPACE}/alljoyn/core/alljoyn" )" -DsdkName="${CI_ARTIFACT_NAME}-sdk"
+    mv -f "${CI_SCRATCH_ARTIFACTS}/${CI_ARTIFACT_NAME}-sdk.zip" "${CI_ARTIFACTS}"
+    mv -f "${CI_SCRATCH_ARTIFACTS}/${CI_ARTIFACT_NAME}-sdk.txt" "${CI_ARTIFACTS}"
+    tocfilename_ref=$( echo "${CI_ARTIFACT_NAME}-sdk-ref" | sed -e 's,-[0-9]\+-[0-9]\+-[0-9]\+[a-zA-Z0-9.]*-,-0-0-0-,' )
+    cp "alljoyn/core/alljoyn/alljoyn_core/docs/sdktoc/$tocfilename_ref.txt" "${CI_ARTIFACTS}" || : ok
     ;;
 ( linux | android )
     for _variant in debug release
@@ -82,7 +85,7 @@ case "${CIAJ_OS}" in
         case "${CIAJ_OS}" in
         ( linux )
             ant -f "${CI_COMMON}/build-linux.xml" $_verbose -Dscons.cpu="${CIAJ_CPU}" -Dscons.variant=$_variant \
-                -DsdkWork="${CI_ARTIFACTS_SCRATCH}" -DsconsDir="${WORKSPACE}/alljoyn/core/alljoyn" -DsdkName="${CI_ARTIFACT_NAME}-sdk-$vartag"
+                -DsdkWork="${CI_SCRATCH_ARTIFACTS}" -DsconsDir="${WORKSPACE}/alljoyn/core/alljoyn" -DsdkName="${CI_ARTIFACT_NAME}-sdk-$vartag"
             ;;
         ( android )
             case "${GERRIT_BRANCH}" in
@@ -97,10 +100,13 @@ case "${CIAJ_OS}" in
             ant -f "${CI_COMMON}/build-android.xml" $_verbose -Dscons.cpu="${CIAJ_CPU}" -Dscons.variant=$_variant \
                 -DANDROID_SDK="${ANDROID_SDK}" -DANDROID_NDK="${ANDROID_NDK}" -DANDROID_SRC="${ANDROID_SRC}" -Dscons.crypto="$sdk_crypto" \
                 -DALLJOYN_KEYSTORE.keystore="${ALLJOYN_ANDROID_KEYSTORE}" -DALLJOYN_KEYSTORE.password="${ALLJOYN_ANDROID_KEYSTORE_PW}"  -DALLJOYN_KEYSTORE.alias="${ALLJOYN_ANDROID_KEYSTORE_ALIAS}" \
-                -DsdkWork="${CI_ARTIFACTS_SCRATCH}" -DsconsDir="${WORKSPACE}/alljoyn/core/alljoyn" -DsdkName="${CI_ARTIFACT_NAME}-sdk-$vartag"
+                -DsdkWork="${CI_SCRATCH_ARTIFACTS}" -DsconsDir="${WORKSPACE}/alljoyn/core/alljoyn" -DsdkName="${CI_ARTIFACT_NAME}-sdk-$vartag"
             ;;
         esac
-        mv -f "${CI_ARTIFACTS_SCRATCH}/${CI_ARTIFACT_NAME}-sdk-$vartag.zip" "${CI_ARTIFACTS}"
+        mv -f "${CI_SCRATCH_ARTIFACTS}/${CI_ARTIFACT_NAME}-sdk-$vartag.zip" "${CI_ARTIFACTS}"
+        mv -f "${CI_SCRATCH_ARTIFACTS}/${CI_ARTIFACT_NAME}-sdk-$vartag.txt" "${CI_ARTIFACTS}"
+        tocfilename_ref=$( echo "${CI_ARTIFACT_NAME}-sdk-$vartag-ref" | sed -e 's,-[0-9]\+-[0-9]\+-[0-9]\+[a-zA-Z0-9.]*-,-0-0-0-,' )
+        cp "alljoyn/core/alljoyn/alljoyn_core/docs/sdktoc/$tocfilename_ref.txt" "${CI_ARTIFACTS}" || : ok
     done
     ;;
 esac
@@ -257,7 +263,7 @@ do
                     :
                 }
                 # per request, core/test team, 7/23/2015
-                rm -f ajtcl*.so dist/lib/ajtcl*.so
+                rm -f libajtcl*.so dist/lib/libajtcl*.so
             popd
             ;;
         esac

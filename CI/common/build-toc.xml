@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <project name="Compare contents of two SDKs using Toc files" default="default">
 
+    <condition property="sdkToc.excludes"   value="(^#.*$)|(^\$(.*\W)?TrustedTLSampleRN(\W.*)?$)" else="^#.*$" >
+        <!--
+            When BR=off, TrustedTLSampleRN is not built or installed in the Linux or Windows SDK.
+            However, we did not check-in separate reference Toc files to use when BR=off (ie, no TrustedTLSampleRN in the SDK).
+            To use the existing BR=on reference Toc files with BR=off builds, we simply suppress all lines containing TrustedTLSampleRN.
+
+            The "^#.*$" RE simply removes all comment lines before comparing Toc files- nothing to do with BR=on/off.
+        -->
+        <contains string="${scons.br}"      substring="off" />
+    </condition>
+
     <macrodef name="xLoad" description="Load contents of SDK (file list) from Toc file into Ant resource collection" >
         <attribute name="argv1" description="input Toc file name" />
         <attribute name="argv2" description="output Ant resource collection refid name" />
@@ -10,7 +21,7 @@
             <loadfile property="xload.t" srcFile="@{argv1}">
                 <filterchain>
                     <tokenfilter>
-                        <containsregex pattern="^\$" />
+                        <replaceregex pattern="${sdkToc.excludes}" />
                         <ignoreblank/>
                     </tokenfilter>
                 </filterchain>
@@ -33,12 +44,13 @@
         </sequential>
     </macrodef> <!-- xLoad -->
 
-    <fail message="Error, tocfile.ref and tocfile.new properties are required" status="2" >
+    <fail message="Error, tocfile.ref tocfile.new and scons.br properties are required" status="2" >
         <condition>
             <not>
                 <and>
                     <isset property="tocfile.ref" />
                     <isset property="tocfile.new" />
+                    <isset property="scons.br" />
                 </and>
             </not>
         </condition>

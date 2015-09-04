@@ -153,10 +153,11 @@ ci_ck_found CI_SRC_AUTOMATION CI_COMMON CI_GENVERSION_PY CI_TEST_HARNESS_PY
 
 export CI_WORK=${WORKSPACE}/work
 export CI_SCRATCH=${WORKSPACE}/scratch
+export CI_SCRATCH_ARTIFACTS=${CI_SCRATCH}/artifacts
 export CI_ARTIFACTS=${WORKSPACE}/artifacts
-export CI_ARTIFACTS_SCRATCH=${CI_SCRATCH}/artifacts
+export CI_ARTIFACTS_ENV=${CI_ARTIFACTS}/env
 
-ci_ck_fullpath CI_WORK CI_SCRATCH CI_ARTIFACTS CI_ARTIFACTS_SCRATCH
+ci_ck_fullpath CI_WORK CI_SCRATCH CI_SCRATCH_ARTIFACTS CI_ARTIFACTS CI_ARTIFACTS_ENV
 
 export HOME=${WORKSPACE}/home
 export TMP=${WORKSPACE}/tmp
@@ -166,8 +167,9 @@ mkdir -p "$HOME" 2>/dev/null    || : error ignored
 mkdir -p "$TMP" 2>/dev/null     || : error ignored
 mkdir -p "${CI_WORK}" 2>/dev/null   || : error ignored
 mkdir -p "${CI_SCRATCH}" 2>/dev/null  || : error ignored
+mkdir -p "${CI_SCRATCH_ARTIFACTS}" 2>/dev/null     || : error ignored
 mkdir -p "${CI_ARTIFACTS}" 2>/dev/null  || : error ignored
-mkdir -p "${CI_ARTIFACTS_SCRATCH}" 2>/dev/null     || : error ignored
+mkdir -p "${CI_ARTIFACTS_ENV}" 2>/dev/null  || : error ignored
 
 # force_home and force_tmp allow the job to fallback to "real" home or tmp, if needed
 # optional, defined in Jenkins Node config
@@ -224,7 +226,7 @@ case "${CI_SHELL_W}" in
     export CI_FORCE_TEMP=$_force_tmp_w
 
     # write setenv.bat file for CMD processes to use later
-    cat <<EOF | sed -e 's,$,\r,' > "${CI_WORK}/ci_setenv.bat"
+    cat <<EOF | sed -e 's,$,\r,' > "${CI_ARTIFACTS_ENV}/ci_setenv.bat"
 $(
     case "${CI_VERBOSE}" in ( [NnFf]* ) echo "@echo off" ;; ( * ) echo "@echo on" ;; esac
 )
@@ -250,7 +252,7 @@ set TEMP=$_tmp_w
 set TMP=$_tmp_w
 set TMPDIR=$_tmp_w
 set CI_ARTIFACTS=$( ci_natpath "${CI_ARTIFACTS}" )
-set CI_ARTIFACTS_SCRATCH=$( ci_natpath "${CI_ARTIFACTS_SCRATCH}" )
+set CI_ARTIFACTS_ENV=$( ci_natpath "${CI_ARTIFACTS_ENV}" )
 set CI_COMMON=$( ci_natpath "${CI_COMMON}" )
 set CI_GENVERSION_PY=$( ci_natpath "${CI_GENVERSION_PY}" )
 set CI_TEST_HARNESS_PY=$( ci_natpath "${CI_TEST_HARNESS_PY}" )
@@ -259,21 +261,22 @@ set CI_JOBSCRIPTS=$( ci_natpath "${CI_JOBSCRIPTS}" )
 set CI_NODESCRIPTS=$( ci_natpath "${CI_NODESCRIPTS}" )
 set CI_WORK=$( ci_natpath "${CI_WORK}" )
 set CI_SCRATCH=$( ci_natpath "${CI_SCRATCH}" )
+set CI_SCRATCH_ARTIFACTS=$( ci_natpath "${CI_SCRATCH_ARTIFACTS}" )
 set WORKSPACE=$( ci_natpath "${WORKSPACE}" )
 EOF
-    case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) : INFO show ci_setenv.bat ; cat "${CI_WORK}/ci_setenv.bat" ;; esac
+    case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) : INFO show ci_setenv.bat ; cat "${CI_ARTIFACTS_ENV}/ci_setenv.bat" ;; esac
     ;;
 esac
 
     # relocate the file containing the original env, saved earlier
-if test -f "${CI_ARTIFACTS}/env/setenv00.sh"
+if test -f "${CI_ARTIFACTS_ENV}/setenv00.sh"
 then
     echo >&2 + : INFO will not overwrite existing setenv.sh files
-    diff "${CI_ARTIFACTS}/env/setenv00.sh" setenv00.sh || : ok
+    diff "${CI_ARTIFACTS_ENV}/setenv00.sh" setenv00.sh || : ok
     rm -f setenv00.sh setfun00.sh
     export CI_ENV=
 else
-    export CI_ENV=${CI_ARTIFACTS}/env
+    export CI_ENV=${CI_ARTIFACTS_ENV}
     mkdir -p "${CI_ENV}" || : ok
     mv -f setenv00.sh setfun00.sh "${CI_ENV}"
 fi
@@ -286,16 +289,16 @@ case "$_t" in
     ci_savenv
     ci_upsetenv 1
     echo >&2 + : source up1setenv.sh
-    if ls -ld "${CI_ARTIFACTS}/env/up1setenv.properties" 2>/dev/null
+    if ls -ld "${CI_ARTIFACTS_ENV}/up1setenv.properties" 2>/dev/null
     then
         echo >&2 + : INFO will not overwrite existing up1setenv.properties files
-        source "${CI_ARTIFACTS}/env/up1setenv.sh"
+        source "${CI_ARTIFACTS_ENV}/up1setenv.sh"
     else
-        source "${CI_ARTIFACTS}/env/up1setenv.sh" > "${CI_WORK}/up1setenv.properties"
+        source "${CI_ARTIFACTS_ENV}/up1setenv.sh" > "${CI_WORK}/up1setenv.properties"
             # add backslashes to contination lines
             # the above "source up1setenv.sh" can not go in a pipeline with awk (below),
             #   because we need the env variables set by "source"
-        awk < "${CI_WORK}/up1setenv.properties" > "${CI_ARTIFACTS}/env/up1setenv.properties" '
+        awk < "${CI_WORK}/up1setenv.properties" > "${CI_ARTIFACTS_ENV}/up1setenv.properties" '
 # pass-through any comments at top of file
 p +0 == 0 && $0 !~ /^[A-Z0-9_]+ = ./    { print ; next ; }
 # do not print this line until we know if the next line starts a new variable

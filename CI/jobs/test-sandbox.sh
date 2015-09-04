@@ -28,7 +28,7 @@ source "${CI_NODESCRIPTS_PART}.sh"
 ci_upsetenv 1
 echo >&2 + : source up1setenv.sh
     # the following source, ci_savenv ops are standard for downstream jobs, but cannot be pushed into a function
-source "${CI_ARTIFACTS}/env/up1setenv.sh"
+source "${CI_ARTIFACTS_ENV}/up1setenv.sh"
 ci_savenv
 
 case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) ci_showfs ;; esac

@@ -192,9 +192,9 @@ END {
 EoF
     ci_declare_env > "${WORKSPACE}/work/ci_upsetenv.txt"
     echo "EoS" | cat -- "${WORKSPACE}/work/ci_upsetenv.txt" - "${CI_UP1}/env/setenv.sh" | \
-        awk > "${CI_ARTIFACTS}/env/up${up}setenv.sh" -v up=$up -f "${WORKSPACE}/work/ci_upsetenv.awk"
+        awk > "${CI_ARTIFACTS_ENV}/up${up}setenv.sh" -v up=$up -f "${WORKSPACE}/work/ci_upsetenv.awk"
 
-    ls -dl "${CI_ARTIFACTS}/env/up${up}setenv.sh"
+    ls -dl "${CI_ARTIFACTS_ENV}/up${up}setenv.sh"
 
     case "$_xet" in ( *x* ) set -x ;; esac
 }
@@ -228,7 +228,7 @@ ci_zip_simple_artifact() {
     ( /* )  ci_exit 2 ci_zip_simple_artifact, "argv3=$1 is not allowed" ;;
     esac
 
-    work=${CI_ARTIFACTS_SCRATCH}/$zip
+    work=${CI_SCRATCH_ARTIFACTS}/$zip
     to=${CI_ARTIFACTS}/$zip.zip
 
     rm -rf "$work" "$to"    || : error ignored
@@ -429,15 +429,15 @@ case "${CI_SHELL_W}" in
 
         local minusk
         case "${CI_KEEPGOING}" in ( "" | [NnFf]* ) minusk="" ;; ( * ) minusk=-k ;; esac
-        cp "${CI_WORK}/ci_setenv.bat" "${CI_WORK}/ci_scons.bat"
+        cp "${CI_ARTIFACTS_ENV}/ci_setenv.bat" "${CI_ARTIFACTS_ENV}/ci_scons.bat"
         (
             echo "@echo on"
             case "${CI_VERBOSE}" in ( [NnFf]* ) ;; ( * ) echo set ;; esac
             echo call scons "$@" $minusk
-        ) | sed -e 's,$,\r,' >> "${CI_WORK}/ci_scons.bat"
+        ) | sed -e 's,$,\r,' >> "${CI_ARTIFACTS_ENV}/ci_scons.bat"
 
         case "$_xet" in ( *x* ) set -x ;; esac
-        cmd.exe ${CI_SLASH_1_2}C "$( ci_natpath "${CI_WORK}/ci_scons.bat" )"
+        cmd.exe ${CI_SLASH_1_2}C "$( ci_natpath "${CI_ARTIFACTS_ENV}/ci_scons.bat" )"
     }
 
     if type zip.exe

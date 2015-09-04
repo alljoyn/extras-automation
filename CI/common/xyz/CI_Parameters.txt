@@ -1,7 +1,7 @@
 variable/parameter name	scope	Jenkins config definition	description
 CI_ARTIFACT_NAME	ad hoc	job parameter	"work in progress, this name probably wont survive"
 CI_ARTIFACTS	all jobs		abs. path to top of artifacts area (workspace): contents are saved by CI framework Job config
-CI_ARTIFACTS_SCRATCH	all jobs		abs. path to a scratch location reserved for building artifacts (workspace): CI_SCRATCH/artifacts
+CI_ARTIFACTS_ENV	all jobs		abs. path to env folder within artifacts area (workspace): contents are saved by CI framework
 CI_BUILD_SELECTOR_NUMBER			tbd
 CI_BUILD_SELECTOR_PROJECT			tbd
 CI_COMMON	all jobs		"abs. path* to ""common"" CI scripts (workspace}"
@@ -27,6 +27,7 @@ CI_PATH	global		special internal env var
 CI_PATH_W	Windows nodes		special internal env var
 CI_REMARKS	all jobs	job parameter	"optional notes for manually-triggered builds, for build description"
 CI_SCRATCH	all jobs		"abs. path to ""scratch"" area (workspace): used for large storage likely duplicated elsewhere- contents lost if build fails"
+CI_SCRATCH_ARTIFACTS	all jobs		abs. path to a scratch location reserved for building artifacts (workspace): CI_SCRATCH/artifacts
 CI_SHELL	all jobs	node env	abs. path to bash shell for CI scripts
 CI_SHELL_W	Windows nodes	"node env, Windows"	"CI_SHELL, Windows-style"
 CI_SHELLPATH	all jobs	node env	initial system PATH

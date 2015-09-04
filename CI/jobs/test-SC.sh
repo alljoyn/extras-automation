@@ -33,8 +33,7 @@ case "${CIAJ_OS}" in
     source "${CI_COMMON}/cif_core_gtests.sh"
     ;;
 ( android )
-    echo >&2 + : ERROR $ci_job, android unit tests not implemented yet
-    ci_exit 0 android unit tests : NOT YET
+    : android no-op
     ;;
 esac
 
@@ -77,6 +76,125 @@ do
     ci_mv $up1_dir alljoyn/core/alljoyn/build/${CIAJ_OS}/${CIAJ_CPU}/$_variant/$ziptag
     ci_showfs      alljoyn/core/alljoyn/build/${CIAJ_OS}/${CIAJ_CPU}/$_variant/$ziptag
 done
+
+ci_ckSdkToc() {
+
+    # skip Sdk Toc test for builds where the appropriate reference Toc file is not known
+    # to be checked-into alljoyn.git/alljoyn_core/docs/sdktoc
+
+    case "${GERRIT_BRANCH}" in
+    ( RB14.* | RB15.04 )
+        :
+        : INFO skipping ck SDK TOC, branch is ${GERRIT_BRANCH}
+        :
+        return 0
+        ;;
+    esac
+    case "${CIAJ_OS}/${CIAJ_MSVC_VERSION}" in
+    ( win7/12.* | win10/14.* )
+        # continue
+        ;;
+    ( win7/* | win10/* )
+        :
+        : INFO skipping ck SDK TOC, MSVC_VERSION is "${CIAJ_MSVC_VERSION}"
+        :
+        return 0
+        ;;
+    esac
+    case "${CIAJ_OS}/${CIAJ_CPU}" in
+    ( darwin/*86 )
+        # continue
+        ;;
+    ( *86 )
+        :
+        : INFO skipping ck SDK TOC, CPU is "${CIAJ_CPU}"
+        :
+        return 0
+        ;;
+    esac
+
+    :
+    : START ck SDK TOC
+    :
+    if ls -l "${CI_UP1}/$tocfilename_ref.txt" ; then
+        cp "${CI_UP1}/$tocfilename_ref.txt" "${CI_ARTIFACTS}"
+        if ls -l "${CI_UP1}/$tocfilename_new.txt" ; then
+            cp "${CI_UP1}/$tocfilename_new.txt" "${CI_ARTIFACTS}"
+            ant -f "$( ci_natpath "${CI_COMMON}/build-toc.xml" )" $_verbose "-Dscons.br=${CIAJ_BR}" \
+                "-Dtocfile.ref=$( ci_natpath "${CI_ARTIFACTS}/$tocfilename_ref.txt" )" \
+                "-Dtocfile.new=$( ci_natpath "${CI_ARTIFACTS}/$tocfilename_new.txt" )" || {
+                :
+                : ERROR SDK TOC "$tocfilename_new.txt" changed
+                :
+                return 2
+            }
+        else
+            :
+            : ERROR SDK TOC "$tocfilename_new.txt" file not found
+            :
+            return 2
+        fi
+    else
+        :
+        : ERROR SDK TOC "$tocfilename_ref.txt" file not found
+        :
+        return 2
+    fi
+    return 0
+}
+
+cd "${WORKSPACE}"
+case "${CIAJ_OS}" in
+( darwin | win7 | win10 )
+    tocfilename_ref=$( echo "${CI_ARTIFACT_NAME_UP1}-sdk-ref" | sed -e 's,-[0-9]\+-[0-9]\+-[0-9]\+[a-zA-Z0-9.]*-,-0-0-0-,' )
+    tocfilename_new=${CI_ARTIFACT_NAME_UP1}-sdk
+    ci_ckSdkToc || {
+        ci_job_xit=$?
+    }
+    ;;
+( android | linux )
+    for _vartag in dbg rel
+    do
+        tocfilename_ref=$( echo "${CI_ARTIFACT_NAME_UP1}-sdk-$_vartag-ref" | sed -e 's,-[0-9]\+-[0-9]\+-[0-9]\+[a-zA-Z0-9.]*-,-0-0-0-,' )
+        tocfilename_new=${CI_ARTIFACT_NAME_UP1}-sdk-$_vartag
+        ci_ckSdkToc || {
+            ci_job_xit=$?
+            case "${CI_KEEPGOING}" in ( "" | [NnFf]* ) break ;; esac
+        }
+    done
+    ;;
+esac
+
+# keep going or exit now?
+
+case $ci_job_xit in
+( 0 )
+    ;;
+( * )
+    case "${CI_KEEPGOING}" in
+    ( "" | [NnFf]* )
+        :
+        :
+        set +x
+        date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
+        echo >&2 + : STATUS $ci_job exit $ci_job_xit
+        exit "$ci_job_xit"
+        ;;
+    esac
+    ;;
+esac
+
+case "${CIAJ_OS}" in
+( android )
+    :
+    : INFO android unit tests not implemented yet
+    :
+    set +x
+    date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
+    echo >&2 + : STATUS $ci_job exit $ci_job_xit
+    exit "$ci_job_xit"
+    ;;
+esac
 
 for _variant in $_variants
 do
