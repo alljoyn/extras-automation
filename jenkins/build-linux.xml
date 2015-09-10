@@ -21,6 +21,16 @@
         <contains string="${scons.cpu}" substring="64" />
     </condition>
     <property name="sdkName"                value="alljoyn-${releaseVersion}-linux_${cpuTag}-sdk-${binTag}" />
+    <property name="scons.br"               value="on" />
+    <condition property="sdkToc.excludes"   value="**/docs/html/**" else="**/docs/html/**" >
+        <!--
+            BR=off has nothing to do with excluding docs/html from the Toc comparison.
+            **/docs/html/** are always excluded because Doxygen generated API docs are unpredictable.
+            It is convenient to define **/docs/html/** here in this property,
+            because additional strings could be added here if BR=off
+        -->
+        <contains string="${scons.br}"      substring="off" />
+    </condition>
 
     <property name="sconsDir"               location="${workingDir}" />
     <property name="sconsDist"              location="${sconsDir}/build/${scons.os}/${scons.cpu}/${scons.variant}/dist" />
@@ -31,6 +41,7 @@
     <property name="sdkDir"                 location="${sdkWork}/${sdkName}" />
     <property name="sdkDist"                location="${sdkDir}" />
     <property name="sdkZip"                 location="${sdkWork}/${sdkName}.zip" />
+    <property name="sdkToc"                 location="${sdkWork}/${sdkName}.txt" />
 
     <property name="genversion"             location="${sconsDir}/build_core/tools/scons/genversion.py" />
     <property name="gitDir"                 location="${sconsDir}/.git" />
@@ -148,6 +159,63 @@
         </sequential>
     </macrodef> <!-- xcpExtras -->
 
+    <macrodef name="xSpecial" description="special purpose" >
+        <attribute name="argv1" description="upper dir" />
+        <attribute name="argv2" description="lower dir" />
+        <attribute name="argv3" description="output property name" />
+        <sequential>
+
+            <local name="argv1.parent" />
+            <dirname property="argv1.parent" file="@{argv1}" />
+
+            <delete file="${sdkTmp}" />
+            <echo force="true" file="${sdkTmp}">@{argv2}</echo>
+
+            <loadfile property="@{argv3}" srcFile="${sdkTmp}">
+                <filterchain>
+                    <tokenfilter>
+                        <replacestring from="${argv1.parent}/" to="" />
+                    </tokenfilter>
+                </filterchain>
+            </loadfile>
+            <delete file="sdkTmp" />
+
+        </sequential>
+    </macrodef> <!-- xSpecial -->
+
+    <macrodef name="xToc" description="Generate a list of files contained in the sdk" >
+        <attribute name="argv1" description="from path" />
+        <attribute name="argv2" description="to file" />
+        <attribute name="argv3" description="absolute path to replace in the output list" />
+        <attribute name="argv4" description="symbolic replacement for argv3 in the output list" />
+        <attribute name="argv5" description="includes path prefix" default="" />
+        <attribute name="argv6" description="excludes patterns" default="${sdkToc.excludes}" />
+        <sequential>
+
+            <echo level="verbose" message="xtoc @{argv1} @{argv2} @{argv3} @{argv4} @{argv5} @{argv6}" />
+
+            <local name="xtoct" />
+            <local name="xtocp" />
+            <xSpecial argv1="@{argv1}" argv2="@{argv3}" argv3="xtocp" />
+
+            <pathconvert property="xtoct" pathsep="${line.separator}" >
+                <sort>
+                    <union>
+                        <fileset dir="@{argv1}" includes="@{argv5}**" excludes="@{argv6}" />
+                        <!-- always include index.html from Doxygen generated API docs- one file represents the entire subdir -->
+                        <fileset dir="@{argv1}" includes="@{argv5}**/docs/html/index.html" />
+                    </union>
+                    <name />
+                </sort>
+                <map from="@{argv3}/" to="$@{argv4}/" />
+            </pathconvert>
+
+            <echo level="verbose" >xtoct:${line.separator}#@{argv4}=${xtocp}${line.separator}${xtoct}${line.separator}</echo>
+            <echo file="@{argv2}" force="true" append="true" >#@{argv4}=${xtocp}${line.separator}${xtoct}${line.separator}</echo>
+
+        </sequential>
+    </macrodef> <!-- xToc -->
+
     <!-- targets -->
 
     <target name="init" >
@@ -162,7 +230,8 @@ doManifest      ${doManifest}
 
 releaseVersion  ${releaseVersion}
 sdkDir          ${sdkDir}
-sdkZip          ${sdkZip}</echo>
+sdkZip          ${sdkZip}
+sdkToc          ${sdkToc}</echo>
 
         <echo level="verbose" >
 basedir         ${basedir}
@@ -171,6 +240,7 @@ workingDir      ${workingDir}
 scons.os        ${scons.os}
 scons.cpu       ${scons.cpu}
 scons.variant   ${scons.variant}
+scons.br        ${scons.br}
 sconsDir        ${sconsDir}
 sconsDist       ${sconsDist}
 sconsJsDoc      ${sconsJsDoc}
@@ -183,6 +253,7 @@ sdkTmp          ${sdkTmp}
 sdkDir          ${sdkDir}
 sdkDist         ${sdkDist}
 sdkZip          ${sdkZip}
+sdkToc          ${sdkToc}
 
 genversion      ${genversion}
 manifest        ${manifest}
@@ -281,6 +352,7 @@ gitVersion  ${gitVersion}
         <delete dir="${sdkDir}" />
         <delete file="${sdkZip}" />
         <delete file="${sdkTmp}" />
+        <delete file="${sdkToc}" />
     </target>
 
     <target name="dist" depends="clean" >
@@ -288,7 +360,7 @@ gitVersion  ${gitVersion}
     </target>
 
     <target name="dist2" depends="dist" if="${doSconsJsDoc}" >
-        <xcpio argv1="${sconsJsDoc}" argv2="${sdkDist}/js/docs" >
+        <xcpio argv1="${sconsJsDoc}" argv2="${sdkDist}/js/docs/html" >
             <include name="**" />
         </xcpio>
     </target>
@@ -297,7 +369,13 @@ gitVersion  ${gitVersion}
         <xcpExtras argv1="${sdkDir}" />
     </target>
 
-    <target name="zip" depends="extras" >
+    <target name="toc" depends="extras" >
+        <delete file="${sdkToc}" />
+        <xToc argv1="${sdkDir}" argv2="${sdkToc}" argv3="${sdkDist}" argv4="DIST" />
+        <echo>${sdkToc} is ready</echo>
+    </target>
+
+    <target name="zip" depends="toc" >
         <xzip argv1="${sdkDir}" argv2="${sdkZip}" />
         <echo>${sdkZip} is ready</echo>
         <delete dir="${sdkDir}" />
