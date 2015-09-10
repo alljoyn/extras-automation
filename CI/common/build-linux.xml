@@ -21,6 +21,16 @@
         <contains string="${scons.cpu}" substring="64" />
     </condition>
     <property name="sdkName"                value="alljoyn-${releaseVersion}-linux_${cpuTag}-sdk-${binTag}" />
+    <property name="scons.br"               value="on" />
+    <condition property="sdkToc.excludes"   value="**/docs/html/**" else="**/docs/html/**" >
+        <!--
+            BR=off has nothing to do with excluding docs/html from the Toc comparison.
+            **/docs/html/** are always excluded because Doxygen generated API docs are unpredictable.
+            It is convenient to define **/docs/html/** here in this property,
+            because additional strings could be added here if BR=off
+        -->
+        <contains string="${scons.br}"      substring="off" />
+    </condition>
 
     <property name="sconsDir"               location="${workingDir}" />
     <property name="sconsDist"              location="${sconsDir}/build/${scons.os}/${scons.cpu}/${scons.variant}/dist" />
@@ -178,10 +188,11 @@
         <attribute name="argv2" description="to file" />
         <attribute name="argv3" description="absolute path to replace in the output list" />
         <attribute name="argv4" description="symbolic replacement for argv3 in the output list" />
-        <element name="fileset-elements" implicit="yes"/>
+        <attribute name="argv5" description="includes path prefix" default="" />
+        <attribute name="argv6" description="excludes patterns" default="${sdkToc.excludes}" />
         <sequential>
 
-            <echo level="verbose" message="xtoc @{argv1} @{argv2} @{argv3} @{argv4}" />
+            <echo level="verbose" message="xtoc @{argv1} @{argv2} @{argv3} @{argv4} @{argv5} @{argv6}" />
 
             <local name="xtoct" />
             <local name="xtocp" />
@@ -190,13 +201,9 @@
             <pathconvert property="xtoct" pathsep="${line.separator}" >
                 <sort>
                     <union>
-                        <fileset dir="@{argv1}" >
-                            <fileset-elements/>
-                            <exclude name="**/docs/html/**" />
-                        </fileset>
-                        <fileset dir="@{argv1}" >
-                            <include name="**/docs/html/index.html" />
-                        </fileset>
+                        <fileset dir="@{argv1}" includes="@{argv5}**" excludes="@{argv6}" />
+                        <!-- always include index.html from Doxygen generated API docs- one file represents the entire subdir -->
+                        <fileset dir="@{argv1}" includes="@{argv5}**/docs/html/index.html" />
                     </union>
                     <name />
                 </sort>
@@ -233,6 +240,7 @@ workingDir      ${workingDir}
 scons.os        ${scons.os}
 scons.cpu       ${scons.cpu}
 scons.variant   ${scons.variant}
+scons.br        ${scons.br}
 sconsDir        ${sconsDir}
 sconsDist       ${sconsDist}
 sconsJsDoc      ${sconsJsDoc}
@@ -363,9 +371,7 @@ gitVersion  ${gitVersion}
 
     <target name="toc" depends="extras" >
         <delete file="${sdkToc}" />
-        <xToc argv1="${sdkDist}" argv2="${sdkToc}" argv3="${sdkDist}" argv4="DIST" >
-            <include name="**" />
-        </xToc>
+        <xToc argv1="${sdkDir}" argv2="${sdkToc}" argv3="${sdkDist}" argv4="DIST" />
         <echo>${sdkToc} is ready</echo>
     </target>
 
