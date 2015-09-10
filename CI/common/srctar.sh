@@ -101,7 +101,7 @@ gitRB14.12      alljoyn-lsf-${1}-src            lighting/service_framework      
 gitv14.12a      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
 gitv14.12b      alljoyn-${1}-src                core/alljoyn                    ${2}        -   =   .
 
-# release (15.04)
+# release (15.04 and 15.09)
 
 gitRB15.04      ajtcl-${1}-src                  core/ajtcl                      ${2}        -   =   .
 gitRB15.04      ajtcl-services-${1}-src         services/base_tcl               ${2}        -   =   .
@@ -153,7 +153,7 @@ gitRB14.12      alljoyn-services-${1}-src               services/base           
     # first core/alljoyn (build_core only)
     # then services/base (everything)
 gitRB15.04      alljoyn-services-${1}-src               core/alljoyn            ${2}        -   .   =/build_core    =/SConstruct    =/README.md
-gitRB15.04      alljoyn-services-${1}-src               services/base           ${2}        -   .   =
+gitRB15.04      alljoyn-services-${1}-src               services/base           ${2}   master   .   =
 
 # master
 
@@ -330,6 +330,21 @@ if false; then
     # doWork ajtcl-$fileVersion-src
     # doWork ajtcl-services-$fileVersion-src
     # doWork alljoyn-$fileVersion-src
+    # doWork alljoyn-js-$fileVersion-src
+    # # no branch yet # doWork alljoyn-lsf-$fileVersion-src
+    # doWork alljoyn-services-$fileVersion-src
+
+
+
+    fileVersion=0.0.1509
+
+    mkTheTable  gitRB15.04  $fileVersion    RB15.09
+
+    # activate this block if jenkins triggers builds on branch RB15.09
+    # doWork ajtcl-$fileVersion-src
+    # # no branch yet # doWork ajtcl-services-$fileVersion-src
+    # doWork alljoyn-$fileVersion-src
+    # # no branch yet # doWork alljoyn-js-$fileVersion-src
     # # no branch yet # doWork alljoyn-lsf-$fileVersion-src
     # doWork alljoyn-services-$fileVersion-src
 
