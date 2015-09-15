@@ -28,21 +28,21 @@ case "${CI_VERBOSE}" in ( [NnFf]* ) set +x ;; ( * ) set -x ;; esac
 
     # shares used by Xyzcity Jenkins
 
-# CIXYZ_SDK   = provided through Jenkins Node env. = path to shared files containing SDKs copied daily from ASA
-# CIXYZ_SHARE = provided through Jenkins Node env. = path to general-purpose static shared files
+# CI_DEPOT = provided through Jenkins Node env. = path to subtree containing saved SDKs, as mounted this node
+# CI_SHARE = provided through Jenkins Node env. = path to general-purpose static shared files, as mounted this node
 
-ci_ck_found CIXYZ_SHARE CIXYZ_SDK
+ci_ck_found CI_SHARE CI_DEPOT
 
-export CIXYZ_SHOPT=${CIXYZ_SHARE}/opt
-export CIXYZ_SHOPT_NODE=${CIXYZ_SHOPT}/node_types/${CI_NODETYPE}
+export CI_SHOPT=${CI_SHARE}/opt
+export CI_SHOPT_NODE=${CI_SHOPT}/node_types/${CI_NODETYPE}
 
-ci_ck_found CIXYZ_SHOPT CIXYZ_SHOPT_NODE
+ci_ck_found CI_SHOPT CI_SHOPT_NODE
 
     # common AllJoyn scons build resources installed on this node
 
 unset GECKO_BASE
 unset JSDOC_DIR
-export GTEST_DIR=${CIXYZ_SHOPT_NODE}/gtest-1.7.0
+export GTEST_DIR=${CI_SHOPT_NODE}/gtest-1.7.0
 
 # JAVA_HOME= see below
 export ANT_HOME=/c/Install/apache-ant-1.8.2
@@ -71,7 +71,7 @@ _doxygen_bin=$DOXYGEN_HOME/bin
 _dot_bin=$GRAPHVIZ_HOME/bin
 _kwbin=/c/Klocwork/Server10.0/install/bin
 
-_uncrustify_061=${CIXYZ_SHOPT_NODE}/uncrustify-0.61/bin/uncrustify.exe
+_uncrustify_061=${CI_SHOPT_NODE}/uncrustify-0.61/bin/uncrustify.exe
 _uncrustify_057=/c/Install/uncrustify-0.57-win32/uncrustify.exe
 
 case "${GERRIT_BRANCH}" in
@@ -124,11 +124,11 @@ set PATH=$( ci_natpath "$ANT_HOME/bin" );$( ci_natpath "$JAVA_HOME/bin" );$( ci_
 set ANT_HOME=$( ci_natpath "$ANT_HOME" )
 set CLASSPATH=$( ci_natpath "$CLASSPATH" )
 set JAVA_HOME=$( ci_natpath "$JAVA_HOME" )
-set CIXYZ_SDK=$( ci_natpath "${CIXYZ_SDK}" )
+set CI_DEPOT=$( ci_natpath "${CI_DEPOT}" )
 set GTEST_DIR=$( ci_natpath "$GTEST_DIR" )
-set CIXYZ_SHARE=$( ci_natpath "${CIXYZ_SHARE}" )
-set CIXYZ_SHOPT=$( ci_natpath "${CIXYZ_SHARE}/opt" )
-set CIXYZ_SHOPT_NODE=$( ci_natpath "${CIXYZ_SHOPT}/node_types/${CI_NODETYPE}" )
+set CI_SHARE=$( ci_natpath "${CI_SHARE}" )
+set CI_SHOPT=$( ci_natpath "${CI_SHARE}/opt" )
+set CI_SHOPT_NODE=$( ci_natpath "${CI_SHOPT}/node_types/${CI_NODETYPE}" )
 set IARBUILD=$( ci_natpath "$IARBUILD" )
 set EFM32_DIR=$( ci_natpath "$EFM32_DIR" )
 set DOXYGEN_HOME=$( ci_natpath "$DOXYGEN_HOME" )

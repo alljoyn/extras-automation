@@ -14,13 +14,13 @@
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 # Xyzcity- AllJoyn- and Jenkins node-specific additions and overrides to ci_setenv
-# ci_node_type=osx109 (Mac OS X)
+# ci_node_type=o1010 (Mac OS X)
 
 case "$ci_xet" in
 ( "" )
     # ci_xet is undefined, so process this file
 
-echo >&2 + : BEGIN xyz/osx109.sh
+echo >&2 + : BEGIN xyz/o1010.sh
 
 source "${CI_COMMON_PART}/${CI_SITE}/ci_setenv.sh"
 
@@ -28,10 +28,10 @@ case "${CI_VERBOSE}" in ( [NnFf]* ) set +x ;; ( * ) set -x ;; esac
 
     # number of processors on a Mac
 
-_n=$( sysctl -n hw.logicalcpu || echo >&2 + : WARNING xyz/osx109.sh, system error from sysctl )
+_n=$( sysctl -n hw.logicalcpu || echo >&2 + : WARNING xyz/o1010.sh, system error from sysctl )
 case "$_n" in
 ( "" | *[!0-9]* | 0 )
-    echo >&2 + : WARNING xyz/osx109.sh, bad or invalid hw.logicalcpu="$_n"
+    echo >&2 + : WARNING xyz/o1010.sh, bad or invalid hw.logicalcpu="$_n"
     # NUMBER_OF_PROCESSORS=1 from ci_setenv
     ;;
 ( * )
@@ -41,27 +41,27 @@ esac
 
     # shares used by Xyzcity Jenkins
 
-# CIXYZ_SDK   = provided through Jenkins Node env. = path to shared files containing SDKs copied daily from ASA
-# CIXYZ_SHARE = provided through Jenkins Node env. = path to general-purpose static shared files
+# CI_DEPOT = provided through Jenkins Node env. = path to subtree containing saved SDKs, as mounted this node
+# CI_SHARE = provided through Jenkins Node env. = path to general-purpose static shared files, as mounted this node
 
-ci_ck_found CIXYZ_SHARE CIXYZ_SDK
+ci_ck_found CI_SHARE CI_DEPOT
 
-export CIXYZ_SHOPT=${CIXYZ_SHARE}/opt
-export CIXYZ_SHOPT_NODE=${CIXYZ_SHOPT}/node_types/${CI_NODETYPE}
+export CI_SHOPT=${CI_SHARE}/opt
+export CI_SHOPT_NODE=${CI_SHOPT}/node_types/${CI_NODETYPE}
 
-ci_ck_found CIXYZ_SHOPT CIXYZ_SHOPT_NODE
+ci_ck_found CI_SHOPT CI_SHOPT_NODE
 
     # common AllJoyn scons build resources installed on this node
 
 unset GECKO_BASE
 export JSDOC_DIR=/usr/local/lib/node_modules/jsdoc
-export GTEST_DIR="${CIXYZ_SHOPT_NODE}/gtest-1.7.0"
+export GTEST_DIR="${CI_SHOPT_NODE}/gtest-1.7.0"
 
 unset JAVA_HOME
 unset ANT_HOME
 unset CLASSPATH
 unset JAVA6BOOT
-export OPENSSL_ROOT="${CIXYZ_SHOPT_NODE}/openssl-1.0.1m"
+export OPENSSL_ROOT="${CI_SHOPT_NODE}/openssl-1.0.1m"
 
 ci_ck_found JSDOC_DIR GTEST_DIR OPENSSL_ROOT
 
@@ -88,7 +88,7 @@ ulimit -c unlimited
         # end processing this file
 ci_savenv
 case "$ci_xet" in ( *x* ) set -x ;; ( * ) set -x ;; esac
-echo >&2 + : END xyz/osx109.sh
+echo >&2 + : END xyz/o1010.sh
     ;;
 ( * )
     # ci_xet is already defined, so skip this file

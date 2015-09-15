@@ -6,6 +6,7 @@ CI_BUILD_SELECTOR_NUMBER			tbd
 CI_BUILD_SELECTOR_PROJECT			tbd
 CI_COMMON	all jobs		"abs. path* to ""common"" CI scripts (workspace}"
 CI_COMMON_PART	all jobs	global env	"rel. path* to ""common"" CI scripts: CI_SRC_AUTOMATION_PART/common"
+CI_DEPOT	all jobs	node env	abs. path to subtree containing saved SDKs: structure of subtree may be site-dependent
 CI_ENV	global		special internal env var
 CI_FORCE_HOME	ad hoc	node env	"optional override for workspace HOME, for use when a specific, non-volatile HOME is required. Klocwork, for example."
 CI_FORCE_HOMEDRIVE	"ad hoc, Windows nodes"	node env	"CI_FORCE_HOME, drive component, Windows-style"
@@ -28,10 +29,13 @@ CI_PATH_W	Windows nodes		special internal env var
 CI_REMARKS	all jobs	job parameter	"optional notes for manually-triggered builds, for build description"
 CI_SCRATCH	all jobs		"abs. path to ""scratch"" area (workspace): used for large storage likely duplicated elsewhere- contents lost if build fails"
 CI_SCRATCH_ARTIFACTS	all jobs		abs. path to a scratch location reserved for building artifacts (workspace): CI_SCRATCH/artifacts
+CI_SHARE	XYZ nodes	node env	abs. path to general-purpose static shared files, as mounted this node
 CI_SHELL	all jobs	node env	abs. path to bash shell for CI scripts
 CI_SHELL_W	Windows nodes	"node env, Windows"	"CI_SHELL, Windows-style"
 CI_SHELLPATH	all jobs	node env	initial system PATH
 CI_SHELLPATH_W	Windows nodes	"node env, Windows"	"CI_SHELLPATH, Windows-style"
+CI_SHOPT	XYZ nodes		abs. path to CI_SHARE/opt
+CI_SHOPT_NODE	XYZ nodes		abs. path to CI_SHARE/opt/node_types/CI_NODETYPE
 CI_SITE	all jobs	global env	"""XYZ"" or ""ASA"" for example"
 CI_SLASH_1_2	Windows nodes		"cmd ""/C"" or ""//C"", for Windows Cygwin or MSYSGit"
 CI_SRC_AUTOMATION	all jobs		abs. path to top of CI scripts tree (workspace)
@@ -63,10 +67,6 @@ CIXYZ_KLOCWORK_PROJECT_BASENAME	"ad hoc, XYZ nodes"	job parameter	related to KW 
 CIXYZ_KLOCWORK_PROJECT_PREFIX	"ad hoc, XYZ nodes"	job parameter	related to KW proj name(s)
 CIXYZ_KLOCWORK_SOURCE_PROJECT	"ad hoc, XYZ nodes"	job parameter	"KW proj to copy, if creating new project"
 CIXYZ_KLOCWORK_URL	"ad hoc, XYZ nodes"	job parameter	KW server URL
-CIXYZ_SDK	XYZ nodes	node env	abs. path to shared files containing SDKs copied daily from ASA, as mounted this node
-CIXYZ_SHARE	XYZ nodes	node env	abs. path to general-purpose static shared files, as mounted this node
-CIXYZ_SHOPT	XYZ nodes		abs. path to CI_SHARE/opt
-CIXYZ_SHOPT_NODE	XYZ nodes		abs. path to CI_SHARE/opt/node_types/CI_NODETYPE
 CIXYZ_TEST_TOOLS	XYZ nodes		abs. path to top of TEST_TOOLS tree (workspace)
 CIXYZ_TEST_TOOLS_PART	XYZ nodes	global env	rel. path* to top of TEST_TOOLS tree
 GECKO_BASE	ad hoc	job parameter	scons parameter

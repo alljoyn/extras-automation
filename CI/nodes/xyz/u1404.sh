@@ -28,21 +28,21 @@ case "${CI_VERBOSE}" in ( [NnFf]* ) set +x ;; ( * ) set -x ;; esac
 
     # shares used by Xyzcity Jenkins
 
-# CIXYZ_SDK   = provided through Jenkins Node env. = path to shared files containing SDKs copied daily from ASA
-# CIXYZ_SHARE = provided through Jenkins Node env. = path to general-purpose static shared files
+# CI_DEPOT = provided through Jenkins Node env. = path to subtree containing saved SDKs, as mounted this node
+# CI_SHARE = provided through Jenkins Node env. = path to general-purpose static shared files, as mounted this node
 
-ci_ck_found CIXYZ_SHARE CIXYZ_SDK
+ci_ck_found CI_SHARE CI_DEPOT
 
-export CIXYZ_SHOPT=${CIXYZ_SHARE}/opt
-export CIXYZ_SHOPT_NODE=${CIXYZ_SHOPT}/node_types/${CI_NODETYPE}
+export CI_SHOPT=${CI_SHARE}/opt
+export CI_SHOPT_NODE=${CI_SHOPT}/node_types/${CI_NODETYPE}
 
-ci_ck_found CIXYZ_SHOPT CIXYZ_SHOPT_NODE
+ci_ck_found CI_SHOPT CI_SHOPT_NODE
 
     # common AllJoyn scons build resources installed on this node
 
 export GECKO_BASE=/opt/xulrunner-sdk
 export JSDOC_DIR=/usr/lib/node_modules/jsdoc
-export GTEST_DIR=${CIXYZ_SHOPT_NODE}/gtest-1.7.0
+export GTEST_DIR=${CI_SHOPT_NODE}/gtest-1.7.0
 
 export JAVA_HOME=/opt/java/jdk1.7.0_67
 export ANT_HOME=/opt/apache-ant-1.8.4
@@ -51,7 +51,7 @@ export JAVA6_BOOT=/opt/java/jdk1.6.0_45/jre/lib
 unset  OPENSSL_ROOT
 
 _kwbin=/opt/klocwork-10.0.6/install/bin
-_uncrustify_061=${CIXYZ_SHOPT_NODE}/uncrustify-0.61/bin/uncrustify
+_uncrustify_061=${CI_SHOPT_NODE}/uncrustify-0.61/bin/uncrustify
 _uncrustify_057=/opt/bin/uncrustify
 
 case "${GERRIT_BRANCH}" in
@@ -83,8 +83,8 @@ case "${CIAJ_OS}" in
             ci_ck_found ANDROID_SRC
             ;;
         ( * )
-            export ANDROID_SDK=${CIXYZ_SHOPT_NODE}/android-sdk-linux
-            export ANDROID_NDK=${CIXYZ_SHOPT_NODE}/android-ndk-r10e
+            export ANDROID_SDK=${CI_SHOPT_NODE}/android-sdk-linux
+            export ANDROID_NDK=${CI_SHOPT_NODE}/android-ndk-r10e
             case "${CIAJ_CRYPTO}" in
             ( openssl )
                 export ANDROID_SRC=/opt/android_jellybean_georgen

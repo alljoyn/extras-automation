@@ -28,16 +28,18 @@ eval _t="${CIAJ_CORE_GITREV}"
 export CIAJ_CORE_GITREV=$_t
 eval _t="${CIAJ_SERVICES_GITREV}"
 export CIAJ_SERVICES_GITREV=$_t
-eval _t="${CIAJ_CORE_SDK}"
-export CIAJ_CORE_SDK=$_t
+eval _t="${CIAJ_CORE_SDK_PART}"
+export CIAJ_CORE_SDK_PART=$_t
 eval _t="${CIAJ_DUKTAPE}"
 export CIAJ_DUKTAPE=$_t
 
-export CIAJ_DUKTAPE_ZIP=${CISEA_SHOPT}/common/${CIAJ_DUKTAPE}.zip
-export CIAJ_CORE_SDK_ZIP=$( find "${CISEA_SDK}" -type f -name "${CIAJ_CORE_SDK}.zip" )
+export CIAJ_DUKTAPE_ZIP=${CI_SHOPT}/common/${CIAJ_DUKTAPE}.zip
+export CIAJ_CORE_SDK_ZIP=${CI_DEPOT}/${CIAJ_CORE_SDK_PART}.zip
 
 ci_ck_found CIAJ_DUKTAPE_ZIP || ci_exit 2 $ci_job, CIAJ_DUKTAPE_ZIP="${CIAJ_DUKTAPE_ZIP}" not found
-ci_ck_found CIAJ_CORE_SDK_ZIP || ci_exit 2 $ci_job, CIAJ_CORE_SDK_ZIP="${CISEA_SDK}/**/${CIAJ_CORE_SDK}.zip" not found
+ci_ck_found CIAJ_CORE_SDK_ZIP || ci_exit 2 $ci_job, CIAJ_CORE_SDK_ZIP="${CIAJ_CORE_SDK_ZIP}" not found
+
+export CIAJ_CORE_SDK=$( basename "${CI_DEPOT}/${CIAJ_CORE_SDK_PART}" )
 
 :
 : set ALLJOYN_DISTDIR according to type of CIAJ_CORE_SDK=${CIAJ_CORE_SDK}

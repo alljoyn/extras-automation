@@ -28,15 +28,15 @@ case "${CI_VERBOSE}" in ( [NnFf]* ) set +x ;; ( * ) set -x ;; esac
 
     # shares used by Xyzcity Jenkins
 
-# CIXYZ_SDK   = provided through Jenkins Node env. = path to shared files containing SDKs copied daily from ASA
-# CIXYZ_SHARE = provided through Jenkins Node env. = path to general-purpose static shared files
+# CI_DEPOT = provided through Jenkins Node env. = path to subtree containing saved SDKs, as mounted this node
+# CI_SHARE = provided through Jenkins Node env. = path to general-purpose static shared files, as mounted this node
 
-ci_ck_found CIXYZ_SHARE CIXYZ_SDK
+ci_ck_found CI_SHARE CI_DEPOT
 
-export CIXYZ_SHOPT=${CIXYZ_SHARE}/opt
-export CIXYZ_SHOPT_NODE=${CIXYZ_SHOPT}/node_types/${CI_NODETYPE}
+export CI_SHOPT=${CI_SHARE}/opt
+export CI_SHOPT_NODE=${CI_SHOPT}/node_types/${CI_NODETYPE}
 
-ci_ck_found CIXYZ_SHOPT CIXYZ_SHOPT_NODE
+ci_ck_found CI_SHOPT CI_SHOPT_NODE
 
     # common AllJoyn scons build resources installed on this node
 
@@ -70,7 +70,7 @@ export GRAPHVIZ_HOME=/c/Install/Graphviz2.38
 _doxygen_bin=$DOXYGEN_HOME/bin
 _dot_bin=$GRAPHVIZ_HOME/bin
 
-_uncrustify_061=${CIXYZ_SHOPT_NODE}/uncrustify-0.61/bin/uncrustify.exe
+_uncrustify_061=${CI_SHOPT_NODE}/uncrustify-0.61/bin/uncrustify.exe
 _uncrustify_bin=$( dirname "$_uncrustify_061" )
 
 ci_ck_found _doxygen_bin _dot_bin _uncrustify_bin
@@ -112,11 +112,11 @@ set PATH=$( ci_natpath "$ANT_HOME/bin" );$( ci_natpath "$JAVA_HOME/bin" );$( ci_
 set ANT_HOME=$( ci_natpath "$ANT_HOME" )
 set CLASSPATH=$( ci_natpath "$CLASSPATH" )
 set JAVA_HOME=$( ci_natpath "$JAVA_HOME" )
-set CIXYZ_SDK=$( ci_natpath "${CIXYZ_SDK}" )
+set CI_DEPOT=$( ci_natpath "${CI_DEPOT}" )
 set GTEST_DIR=$( ci_natpath "$GTEST_DIR" )
-set CIXYZ_SHARE=$( ci_natpath "${CIXYZ_SHARE}" )
-set CIXYZ_SHOPT=$( ci_natpath "${CIXYZ_SHARE}/opt" )
-set CIXYZ_SHOPT_NODE=$( ci_natpath "${CIXYZ_SHOPT}/node_types/${CI_NODETYPE}" )
+set CI_SHARE=$( ci_natpath "${CI_SHARE}" )
+set CI_SHOPT=$( ci_natpath "${CI_SHARE}/opt" )
+set CI_SHOPT_NODE=$( ci_natpath "${CI_SHOPT}/node_types/${CI_NODETYPE}" )
 set DOXYGEN_HOME=$( ci_natpath "$DOXYGEN_HOME" )
 set GRAPHVIZ_HOME=$( ci_natpath "$GRAPHVIZ_HOME" )
 set CIXYZ_TEST_TOOLS=$( ci_natpath "$CIXYZ_TEST_TOOLS" )
