@@ -207,17 +207,17 @@
             <local name="argv1.parent" />
             <dirname property="argv1.parent" file="@{argv1}" />
 
-            <delete file="${sdkTmp}" />
-            <echo force="true" file="${sdkTmp}">@{argv2}</echo>
+            <delete file="${sdkTmp}-xtoc" />
+            <echo force="true" file="${sdkTmp}-xtoc">@{argv2}</echo>
 
-            <loadfile property="@{argv3}" srcFile="${sdkTmp}">
+            <loadfile property="@{argv3}" srcFile="${sdkTmp}-xtoc">
                 <filterchain>
                     <tokenfilter>
                         <replacestring from="${argv1.parent}/" to="" />
                     </tokenfilter>
                 </filterchain>
             </loadfile>
-            <delete file="sdkTmp" />
+            <delete file="${sdkTmp}-xtoc" />
 
         </sequential>
     </macrodef> <!-- xSpecial -->
