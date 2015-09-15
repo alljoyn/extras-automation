@@ -42,6 +42,7 @@
     <property name="sconsDist.rel"          location="${sconsDir}/build/${scons.os}/${scons.cpu}/release/dist" />
 
     <property name="sdkWork"                location="${workingDir}/sdks" />
+    <property name="sdkTmp"                 location="${sdkWork}/z-${user.name}-${xtstamp}" />
     <property name="sdkDir"                 location="${sdkWork}/${sdkName}" />
     <property name="sdkZip"                 location="${sdkWork}/${sdkName}.zip" />
     <property name="sdkToc"                 location="${sdkWork}/${sdkName}.txt" />
@@ -121,10 +122,10 @@
             <local name="argv1.parent" />
             <dirname property="argv1.parent" file="@{argv1}" />
 
-            <delete file="${sdkTmp}" />
-            <echo force="true" file="${sdkTmp}">@{argv2}</echo>
+            <delete file="${sdkTmp}-xtoc" />
+            <echo force="true" file="${sdkTmp}-xtoc">@{argv2}</echo>
 
-            <loadfile property="@{argv3}" srcFile="${sdkTmp}">
+            <loadfile property="@{argv3}" srcFile="${sdkTmp}-xtoc">
                 <filterchain>
                     <tokenfilter>
                         <replacestring from="${argv1.parent}${file.separator}" to="" />
@@ -132,7 +133,7 @@
                     </tokenfilter>
                 </filterchain>
             </loadfile>
-            <delete file="sdkTmp" />
+            <delete file="${sdkTmp}-xtoc" />
 
         </sequential>
     </macrodef> <!-- xSpecial -->
@@ -202,6 +203,7 @@ sconsDist.rel   ${sconsDist.rel}
 releaseVersion  ${releaseVersion}
 sdkName         ${sdkName}
 sdkWork         ${sdkWork}
+sdkTmp          ${sdkTmp}
 sdkDir          ${sdkDir}
 sdkDist.dbg     ${sdkDist.dbg}
 sdkDist.rel     ${sdkDist.rel}
@@ -292,12 +294,16 @@ gitVersion  ${gitVersion}
     <target name="clean" depends="manifest" >
         <local name="sdkDir.parent" />
         <local name="sdkZip.parent" />
+        <local name="sdkTmp.parent" />
         <dirname property="sdkDir.parent" file="${sdkDir}" />
         <dirname property="sdkZip.parent" file="${sdkZip}" />
+        <dirname property="sdkTmp.parent" file="${sdkTmp}" />
         <mkdir dir="${sdkDir.parent}" />
         <mkdir dir="${sdkZip.parent}" />
+        <mkdir dir="${sdkTmp.parent}" />
         <delete dir="${sdkDir}" />
         <delete file="${sdkZip}" />
+        <delete file="${sdkTmp}" />
         <delete file="${sdkToc}" />
     </target>
 
