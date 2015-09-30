@@ -28,7 +28,8 @@ _j=$( expr $NUMBER_OF_PROCESSORS / 2 )
 case "$_j" in ( "" | 0 | 1 ) _j=2 ;; esac
 export SCONSFLAGS="-j $_j"
 # scons keepgoing flag
-case "${CI_KEEPGOING}" in ( "" | [NnFf]* ) ;; ( * ) SCONSFLAGS="-k $SCONSFLAGS" ;; esac
+### FIXME : ignore CI_KEEPGOING, do not use scons -k in AJ SC build for OS/X
+### case "${CI_KEEPGOING}" in ( "" | [NnFf]* ) ;; ( * ) SCONSFLAGS="-k $SCONSFLAGS" ;; esac
 
 source "${CI_COMMON}/cif_core_xcodebuilds.sh"
 source "${CI_COMMON}/cif_scons_vartags.sh"

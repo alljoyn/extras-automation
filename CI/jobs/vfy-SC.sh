@@ -61,8 +61,8 @@ pushd alljoyn/core/alljoyn
     ci_core_sconsbuild "${CIAJ_OS}" "${CIAJ_CPU}" "${CIAJ_VARIANT}"
 popd
 
-case "${CIAJ_OS}" in
-( linux | win7 | win10 )
+case "${CIAJ_OS}:${GERRIT_BRANCH}" in
+( linux:* | win7:* | win10:RB15.09 )
     pushd alljoyn/core/alljoyn
         :
         : google tests
@@ -100,7 +100,12 @@ case "${CIAJ_OS}" in
     ##  esac
     popd
     ;;
-( android )
+( win10:* )
+    :
+    : WARNING skip all unit tests for Windows 10, BRANCH=${GERRIT_BRANCH}
+    :
+    ;;
+( android:* )
     :
     : START android SDK
     :

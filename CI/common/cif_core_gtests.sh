@@ -372,6 +372,22 @@ $(
 '           ;;
         esac
         ;;
+    ( ajtest:win10:* )
+        case "${CI_JOBTYPE}" in
+        ( vfy-* )
+            :
+            : WARNING : disabled ajtest case "SecurityClaimApplicationTest.*"
+            :
+            echo '
+    #
+    # AJTEST test case disabled, windows 10, single-CPU
+    #
+
+    SecurityClaimApplicationTest.*=NO
+'
+            ;;
+        esac
+        ;;
     esac
 )
 EoF
