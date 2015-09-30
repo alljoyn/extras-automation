@@ -341,9 +341,9 @@ if false; then
     mkTheTable  gitRB15.04  $fileVersion    RB15.09
 
     # activate this block if jenkins triggers builds on branch RB15.09
-    doWork ajtcl-$fileVersion-src
+    # doWork ajtcl-$fileVersion-src
     # # no branch yet # doWork ajtcl-services-$fileVersion-src
-    doWork alljoyn-$fileVersion-src
+    # doWork alljoyn-$fileVersion-src
     # # no branch yet # doWork alljoyn-js-$fileVersion-src
     # # no branch yet # doWork alljoyn-lsf-$fileVersion-src
     # doWork alljoyn-services-$fileVersion-src
