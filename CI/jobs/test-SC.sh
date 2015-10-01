@@ -146,7 +146,7 @@ ci_ckSdkToc() {
 cd "${WORKSPACE}"
 case "${CIAJ_OS}" in
 ( darwin | win7 | win10 )
-    tocfilename_ref=$( echo "${CI_ARTIFACT_NAME_UP1}-sdk-ref" | sed -e 's,-[0-9]\+-[0-9]\+-[0-9]\+[a-zA-Z0-9.]*-,-0-0-0-,' )
+    tocfilename_ref=$( echo "${CI_ARTIFACT_NAME_UP1}-sdk-ref" | sed -e 's,-[0-9][0-9]*\.[0-9][0-9]*\.[0-9][a-zA-Z0-9.]*-,-0.0.0-,' )
     tocfilename_new=${CI_ARTIFACT_NAME_UP1}-sdk
     ci_ckSdkToc || {
         ci_job_xit=$?
@@ -155,7 +155,7 @@ case "${CIAJ_OS}" in
 ( android | linux )
     for _vartag in dbg rel
     do
-        tocfilename_ref=$( echo "${CI_ARTIFACT_NAME_UP1}-sdk-$_vartag-ref" | sed -e 's,-[0-9]\+-[0-9]\+-[0-9]\+[a-zA-Z0-9.]*-,-0-0-0-,' )
+        tocfilename_ref=$( echo "${CI_ARTIFACT_NAME_UP1}-sdk-$_vartag-ref" | sed -e 's,-[0-9][0-9]*\.[0-9][0-9]*\.[0-9][a-zA-Z0-9.]*-,-0.0.0-,' )
         tocfilename_new=${CI_ARTIFACT_NAME_UP1}-sdk-$_vartag
         ci_ckSdkToc || {
             ci_job_xit=$?

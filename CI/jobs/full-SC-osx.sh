@@ -72,7 +72,7 @@ cd "${WORKSPACE}"
 ant -f "${CI_COMMON}/build-mac.xml" $_verbose -DsdkWork="${CI_SCRATCH_ARTIFACTS}" -DsconsDir="${WORKSPACE}/alljoyn/core/alljoyn" -DsdkName="${CI_ARTIFACT_NAME}-sdk"
 mv -f "${CI_SCRATCH_ARTIFACTS}/${CI_ARTIFACT_NAME}-sdk.zip" "${CI_ARTIFACTS}"
 mv -f "${CI_SCRATCH_ARTIFACTS}/${CI_ARTIFACT_NAME}-sdk.txt" "${CI_ARTIFACTS}"
-tocfilename_ref=$( echo "${CI_ARTIFACT_NAME}-sdk-ref" | sed -e 's,-[0-9]\+-[0-9]\+-[0-9]\+[a-zA-Z0-9.]*-,-0-0-0-,' )
+tocfilename_ref=$( echo "${CI_ARTIFACT_NAME}-sdk-ref" | sed -e 's,-[0-9][0-9]*\.[0-9][0-9]*\.[0-9][a-zA-Z0-9.]*-,-0.0.0-,' )
 cp "alljoyn/core/alljoyn/alljoyn_core/docs/sdktoc/$tocfilename_ref.txt" "${CI_ARTIFACTS}" || : ok
 
 :
