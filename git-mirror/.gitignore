@@ -1,0 +1,3 @@
+# do not track .ssh key files: for example, .ssh/id_rsa
+*/.ssh/*[!.][!p][!u][!b]
+! */.ssh/*.pub
