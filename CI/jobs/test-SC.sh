@@ -217,7 +217,7 @@ do
             :
             : junit tests $vartag
             :
-            ci_core_junits "${CIAJ_OS}" "${CIAJ_CPU}" $_variant "${CIAJ_BR}" || {
+            ci_core_junits "${CIAJ_OS}" "${CIAJ_CPU}" $_variant "${CIAJ_BR}" "${CIAJ_BINDINGS}" || {
                 ci_job_xit=2
                 case "${CI_KEEPGOING}" in ( "" | [NnFf]* ) popd ; break ;; esac
             }

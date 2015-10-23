@@ -129,7 +129,7 @@ do
             :
             : test.zip $_variant
             :
-            ci_core_ready_junits "${CIAJ_OS}" "${CIAJ_CPU}" $_variant
+            ci_core_ready_junits "${CIAJ_OS}" "${CIAJ_CPU}" "$_variant" "${CIAJ_BINDINGS}"
             ci_zip_simple_artifact "$test" "${CI_ARTIFACT_NAME}-test-$vartag"
             ;;
         ( * )

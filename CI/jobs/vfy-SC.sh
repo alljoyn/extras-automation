@@ -72,8 +72,8 @@ case "${CIAJ_OS}:${GERRIT_BRANCH}" in
         :
         : junit tests
         :
-        ci_core_ready_junits "${CIAJ_OS}" "${CIAJ_CPU}" "${CIAJ_VARIANT}"
-        ci_core_junits "${CIAJ_OS}" "${CIAJ_CPU}" "${CIAJ_VARIANT}" "${CIAJ_BR}"
+        ci_core_ready_junits "${CIAJ_OS}" "${CIAJ_CPU}" "${CIAJ_VARIANT}" "${CIAJ_BINDINGS}"
+        ci_core_junits "${CIAJ_OS}" "${CIAJ_CPU}" "${CIAJ_VARIANT}" "${CIAJ_BR}" "${CIAJ_BINDINGS}"
 
     ##  case "${CIAJ_OS}" in
     ##  ( linux )

@@ -17,6 +17,7 @@
 #   cwd     : top of AJ Core SCons build tree (ie, just above build/$os/$cpu/$variant/...)
 #   argv1,2,3 : OS,CPU,VARIANT : as in build/$OS/$CPU/$VARIANT/dist path, as in AJ Core SCons options OS,CPU,VARIANT
 #   argv4   : BR=[on, off] : "bundled router" -or- "router daemon" (alljoyn-daemon), as in AJ Core SCons option BR
+#   argv5   : BINDINGS : cpp,c,java,etc as in AJ Std Core SCons option BINDINGS
 #   return  : 0 -or- non-zero : pass -or- fail
 
 case "$cif_core_junits_xet" in
@@ -42,6 +43,7 @@ ci_core_junits() {
     local _cpu="$2"
     local _variant="$3"
     local _br="$4"
+    local _bindings="$5"
 
     local vartag cputag dist test obj
     eval $( ci_scons_vartags "$@" )
@@ -49,6 +51,20 @@ ci_core_junits() {
     case "$_os" in
     ( android )
         : no-op for $_os
+        date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
+        case "$xet" in ( *x* ) set -x ;; ( * ) set +x ;; esac
+        return $xit
+        ;;
+    esac
+
+    case "$_bindings" in
+    ( *,java,* | *,java | java,* )
+        : BINDINGS=$_bindings : ok
+        ;;
+    ( * )
+        :
+        : WARNING BINDINGS=$_bindings : no java, skip junits
+        :
         date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
         case "$xet" in ( *x* ) set -x ;; ( * ) set +x ;; esac
         return $xit
@@ -244,6 +260,7 @@ export -f ci_core_junits
 # function prepares "test" tree to run JUnit tests for AllJoyn Core on any platform except Android (because emulator) or Mac/OSX (because no java)
 #   cwd     : top of AJ Core SCons build tree (ie, just above build/$os/$cpu/$variant/... AND alljoyn_core, alljoyn_java, etc)
 #   argv1,2,3 : OS,CPU,VARIANT : as in build/$OS/$CPU/$VARIANT/dist path, as in AJ Core SCons options OS,CPU,VARIANT
+#   argv4   : BINDINGS : cpp,c,java,etc as in AJ Std Core SCons option BINDINGS
 #   return  : 0 -or- non-zero : pass -or- fail
 
 ci_core_ready_junits() {
@@ -259,6 +276,7 @@ ci_core_ready_junits() {
     local _os="$1"
     local _cpu="$2"
     local _variant="$3"
+    local _bindings="$4"
 
     local vartag cputag dist test obj
     eval $( ci_scons_vartags "$@" )
@@ -266,6 +284,18 @@ ci_core_ready_junits() {
     case "$_os" in
     ( android )
         : no-op for $_os
+        date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
+        case "$xet" in ( *x* ) set -x ;; ( * ) set +x ;; esac
+        return $xit
+        ;;
+    esac
+
+    case "$_bindings" in
+    ( *,java,* | *,java | java,* )
+        : BINDINGS=$_bindings : ok
+        ;;
+    ( * )
+        : BINDINGS=$_bindings : no java, skip junit setup
         date "+TIMESTAMP=%Y/%m/%d-%H:%M:%S"
         case "$xet" in ( *x* ) set -x ;; ( * ) set +x ;; esac
         return $xit
