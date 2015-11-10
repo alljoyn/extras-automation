@@ -1,19 +1,31 @@
-# Copyright AllSeen Alliance. All rights reserved.
+# Copyright (c) Open Connectivity Foundation (OCF) and AllJoyn Open
+#    Source Project (AJOSP) Contributors and others.
 #
-#    Permission to use, copy, modify, and/or distribute this software for any
-#    purpose with or without fee is hereby granted, provided that the above
-#    copyright notice and this permission notice appear in all copies.
+#    SPDX-License-Identifier: Apache-2.0
 #
-#    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-#    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-#    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-#    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-#    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-#    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-#    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#    All rights reserved. This program and the accompanying materials are
+#    made available under the terms of the Apache License, Version 2.0
+#    which accompanies this distribution, and is available at
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Copyright (c) Open Connectivity Foundation and Contributors to AllSeen
+#    Alliance. All rights reserved.
+#
+#    Permission to use, copy, modify, and/or distribute this software for
+#    any purpose with or without fee is hereby granted, provided that the
+#    above copyright notice and this permission notice appear in all
+#    copies.
+#
+#     THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+#     WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+#     WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+#     AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+#     DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+#     PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+#     TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+#     PERFORMANCE OF THIS SOFTWARE.
 
 # BUILD_LOG_REGEX for Jenkins extended email generator, expanded to one-line per pattern.
 # Collapse all patterns into a single, long line of text, then paste into Jenkins config.
 
 ${BUILD_LOG_REGEX,regex="^\\++ exit [1-9]\\d*(\\s|$)|^.*\\smarked build as failure(\\s|$)|^.*\\schanged build result to UNSTABLE(\\s|$)|^Build was aborted(\\s|$)|^\\++ (?i)(REM|:) (?-i)ERROR(\\s|$)|^\\++ (?i)(REM|:) (?-i)FAILURE(\\s|$)|^\\++ (?i)(REM|:) (?-i)FAILED(\\s|$)|^\\++ (?i)(REM|:) (?-i)STATUS\\s.*(?i)exit [^0](\\d|\\s|$)|^\\++ (?i)(REM|:) (?-i)UNSTABLE(\\s|$)|^scons: building terminated because of errors\\.|^scons: done building targets \\(errors occurred during build\\)\\.|^\\*\\* TEST FAILED \\*\\*|^\\*\\* BUILD FAILED \\*\\*|^BUILD FAILED(\\s|$)|^[^\\s\\+:].*\\S ?: (?i)error:? \\S|^[^\\s\\+:].*\\S ?: (?i)fatal error:? \\S|^[^\\s\\+:].*\\S : Error\\[\\w+\\](:\\s|$)|^Error\\[\\w+\\](:\\s|$)|^Fatal Error\\[\\w+\\](:\\s|$)|^\\[\\s+FAILED\\s+\\]\\s|^\\s*\\[junit\\]\\sTestcase:\\s.*\\sFAILED(\\s|$)|^\\s*\\[junit\\]\\sTest\\s.*\\sFAILED(\\s|$)|^Error\\sin\\s.*:(\\s|$)|^Failure\\sin\\s.*:(\\s|$)|^FAILURES!+(\\s|$)",linesBefore=3,maxMatches=100}
-
