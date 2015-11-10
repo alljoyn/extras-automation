@@ -32,7 +32,7 @@ then
     		cat logs/mirror.log
 	fi
 
-	find logs/* -mindepth 1 -type f -name '*.log' -exec tail -100 {} \; -exec rm -f {} \;
+	find logs/* -type f -name '*.log' ! -name mirror.log -exec tail -100 {} \; -exec rm -f {} \;
         > logs/mirror.log
 fi
 
