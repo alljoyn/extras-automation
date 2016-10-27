@@ -28,7 +28,7 @@ mkdir %PFXDIR%
 cd %PFXDIR%
 echo %CD%
 
-FOR %%P IN ("alljoyn","ajtcl","test") DO (
+FOR %%P IN (alljoyn,ajtcl,test) DO (
   mkdir "%PFXDIR%\%%P"
   cd "%PFXDIR%\%%P"
 
@@ -36,7 +36,7 @@ FOR %%P IN ("alljoyn","ajtcl","test") DO (
   git remote add origin https://git.allseenalliance.org/gerrit/core/%%P.git
 
   IF ["core/%%P"]==["%GERRIT_PROJECT%"] (
-    git fetch -q origin "%GERRIT_PATCHSET_REVISION%"
+    git fetch -q origin "%GERRIT_REFSPEC%"
   ) ELSE (
     git fetch -q origin "%GERRIT_BRANCH%"
   )
