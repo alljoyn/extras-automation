@@ -28,7 +28,7 @@ mkdir %PFXDIR%
 cd %PFXDIR%
 echo %CD%
 
-FOR %%P IN ("alljoyn","ajtcl","test") DO (
+FOR %%P IN (alljoyn,ajtcl,test) DO (
   mkdir "%PFXDIR%\%%P"
   cd "%PFXDIR%\%%P"
 
