@@ -49,24 +49,74 @@ FOR %%P IN (alljoyn,ajtcl,test) DO (
 
 cd "%PFXDIR%\alljoyn"
 
+set SCONS_OPTS="-j%NUMBER_OF_PROCESSORS% MSVC_VERSION=%MSVC_VERSION% OS=%AJ_OS% CPU=%AJ_CPU% VARIANT=%VARIANT% WS=off"
+
 @call :dt start scons %VARIANT% 3
 
-cmd /c scons -j%NUMBER_OF_PROCESSORS% MSVC_VERSION=%MSVC_VERSION% V=1 OS=%AJ_OS% CPU=%AJ_CPU% BINDINGS=c,cpp,java WS=off DOCS=none BR=on VARIANT=%VARIANT%
+cmd /c scons %SCONS_OPTS% DOCS=none BINDINGS=c,cpp,java V=1 BR=on
 @IF %ERRORLEVEL% GTR 0 (ECHO =========SCONS FAILED========= & exit -1)
 @call :dt end scons 3
 
-cd ..\ajtcl
+cd "%PFXDIR%\ajtcl"
 
-cmd /c scons -j%NUMBER_OF_PROCESSORS% MSVC_VERSION=%MSVC_VERSION% OS=%AJ_OS% CPU=%AJ_CPU% BINDINGS=c,cpp,java DOCS=html VARIANT=%VARIANT% WS=off
+cmd /c scons %SCONS_OPTS% DOCS=html BINDINGS=c,cpp,java
 @IF %ERRORLEVEL% GTR 0 (ECHO =========SCONS FAILED========= & exit -1)
-cd ..\test\scl
 
-cmd /c scons -j%NUMBER_OF_PROCESSORS% MSVC_VERSION=%MSVC_VERSION% OS=%AJ_OS% CPU=%AJ_CPU% DOCS=html VARIANT=%VARIANT% WS=off AJ_CORE_DIST_DIR=..\..\alljoyn\build\%AJ_OS%\%AJ_CPU%\%VARIANT%\dist
+cd "%PFXDIR%\test\scl"
+
+cmd /c scons %SCONS_OPTS% DOCS=html AJ_CORE_DIST_DIR=%PFXDIR%\alljoyn\build\%AJ_OS%\%AJ_CPU%\%VARIANT%\dist
 @IF %ERRORLEVEL% GTR 0 (ECHO =========SCONS FAILED========= & exit -1)
+
 dir /s/l/b *.exe
 ajtcsctest.exe
 
 @call :end
+
+:runtest
+    SET TEST_NAME=%1
+    SET TEST_DIR=%2
+
+    del /F /Q %HOME%\*
+    del /F /Q %TEMP%\*
+
+    @echo START %TEST_NAME%
+    @call :dt START %TEST_NAME%
+    cmd /c %TEST_DIR%\%TEST_NAME%.exe --gtest_catch_exceptions=0 2>;1 | tee %TEST_NAME%.log
+    @call :errorcheck
+    @call :dumpcheck %TEST_NAME% %TEST_DIR%
+    findstr /c:"exiting with status 0" %TEST_NAME%.log
+    @call :errorcheck
+    @call :dt END %TEST_NAME%
+exit /b
+
+
+:dumpcheck
+    sleep 1
+    FOR /F "tokens=*" %%a IN ('tlist -p windbg') DO SET windbgPid=%%a
+     
+    IF %windbgPid% GTR -1 (
+       sleep 30
+       kill -f %windbgPid%
+    )
+
+    IF EXIST %DUMP_LOCATION% (
+        SET TEST_NAME=%1
+        SET TEST_DIR=%2
+
+        move %DUMP_LOCATION% artifacts\%TEST_NAME%.dmp
+        move %TEST_DIR%\%TEST_NAME%.pdb artifacts\%TEST_NAME%.pdb
+        move %TEST_DIR%\%TEST_NAME%.exe artifacts\%TEST_NAME%.exe
+        @echo captured dump for %TEST_NAME%.exe
+    )
+exit /b
+
+:errorcheck
+    @IF %ERRORLEVEL% GTR 0 (
+        ECHO ** error: ERROR TEST FAILED **
+        SET FAIL=1
+        REN %TEST_NAME%.log %TEST_NAME%-fail.log
+    )
+@exit /b
 
 :dt
 @for /F "usebackq tokens=1,2 delims==" %%i in (`@wmic os get LocalDateTime /VALUE 2^>NUL`) do @if '.%%i.'=='.LocalDateTime.' set ldt=%%j
