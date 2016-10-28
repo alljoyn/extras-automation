@@ -1,5 +1,7 @@
 prompt +
 
+setlocal EnableDelayedExpansion
+
 set
 
 REM BUILD DESCRIPTION : GERRIT_CHANGE_OWNER_EMAIL=%GERRIT_CHANGE_OWNER_EMAIL%, BUILD_USER_EMAIL=%BUILD_USER_EMAIL%, GERRIT_BRANCH=%GERRIT_BRANCH%, GIT_COMMIT=%GIT_COMMIT%
@@ -17,56 +19,123 @@ set AJ_CPU=x86_64
 
 set SQLITE_DIR=C:\tools\sqlite
 
+set HOME=%WORKSPACE%\home
+set TEMP=%WORKSPACE%\temp
+set PFXDIR=%CD%\core
+
 set
 
 reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug" /s
 
-set PFXDIR="%CD%\core"
-
 rd /s /q %PFXDIR%
 mkdir %PFXDIR%
 cd %PFXDIR%
-echo %CD%
+
+REM check out each project's code from git
+REM * for the project which triggered this build, check out the specific refspec.
+REM * for all others, check out the branch against which the refspec is based
 
 FOR %%P IN (alljoyn,ajtcl,test) DO (
+  IF ["core/%%P"]==["%GERRIT_PROJECT%"] ( set GREF=%GERRIT_REFSPEC% ) ELSE ( set GREF=%GERRIT_BRANCH% )
+
   mkdir "%PFXDIR%\%%P"
   cd "%PFXDIR%\%%P"
 
   git init
+  git fetch -q origin !GREF! > NUL 2>&1
   git remote add origin https://git.allseenalliance.org/gerrit/core/%%P.git
-
-  IF ["core/%%P"]==["%GERRIT_PROJECT%"] (
-    git fetch -q origin "%GERRIT_REFSPEC%"
-  ) ELSE (
-    git fetch -q origin "%GERRIT_BRANCH%"
-  )
-
-  git reset --hard FETCH_HEAD
+  git reset --hard FETCH_HEAD > NUL 2>&1
 
   rem INFO git log
   git log -1
 )
 
-cd "%PFXDIR%\alljoyn"
+set SCONS_OPTS=-j%NUMBER_OF_PROCESSORS% MSVC_VERSION=%MSVC_VERSION% OS=%AJ_OS% CPU=%AJ_CPU% VARIANT=%VARIANT% WS=off
 
-@call :dt start scons %VARIANT% 3
+set BUILD_OPTS[alljoyn]=DOCS=none BINDINGS=c,cpp,java V=1 BR=on
+set BUILD_OPTS[ajtcl]=DOCS=html BINDINGS=c,cpp,java
+set BUILD_OPTS[test-scl]=DOCS=html AJ_CORE_DIST_DIR=%PFXDIR%\alljoyn\build\%AJ_OS%\%AJ_CPU%\%VARIANT%\dist
 
-cmd /c scons -j%NUMBER_OF_PROCESSORS% MSVC_VERSION=%MSVC_VERSION% V=1 OS=%AJ_OS% CPU=%AJ_CPU% BINDINGS=c,cpp,java WS=off DOCS=none BR=on VARIANT=%VARIANT%
-@IF %ERRORLEVEL% GTR 0 (ECHO =========SCONS FAILED========= & exit -1)
-@call :dt end scons 3
+FOR %%N IN (alljoyn,ajtcl,test-scl) DO (
+  set N=%%N
+  set D=!N:-=\!
+  cd %PFXDIR%\!D!
+  @call :dt start scons %VARIANT% 3
+  cmd /c scons %SCONS_OPTS% !BUILD_OPTS[%%N]!
+  @IF %ERRORLEVEL% GTR 0 (ECHO =========SCONS FAILED========= & exit -1)
+  @call :dt end scons 3
+)
 
-cd ..\ajtcl
-
-cmd /c scons -j%NUMBER_OF_PROCESSORS% MSVC_VERSION=%MSVC_VERSION% OS=%AJ_OS% CPU=%AJ_CPU% BINDINGS=c,cpp,java DOCS=html VARIANT=%VARIANT% WS=off
-@IF %ERRORLEVEL% GTR 0 (ECHO =========SCONS FAILED========= & exit -1)
-cd ..\test\scl
-
-cmd /c scons -j%NUMBER_OF_PROCESSORS% MSVC_VERSION=%MSVC_VERSION% OS=%AJ_OS% CPU=%AJ_CPU% DOCS=html VARIANT=%VARIANT% WS=off AJ_CORE_DIST_DIR=..\..\alljoyn\build\%AJ_OS%\%AJ_CPU%\%VARIANT%\dist
-@IF %ERRORLEVEL% GTR 0 (ECHO =========SCONS FAILED========= & exit -1)
+cd "%PFXDIR%\test\scl"
 dir /s/l/b *.exe
 ajtcsctest.exe
 
+mkdir %HOME% %TEMP% artifacts
+
+set TDIR[AJCHECK]=cpp
+set TDIR[AJCTEST]=c
+set TDIR[AJTEST]=cpp
+set TDIR[CMTEST]=cpp
+set TDIR[ABOUTTEST]=cpp
+set TDIR[SECMGRTEST]=cpp
+
+FOR %%T IN (AJCHECK,AJCTEST,AJTEST,CMTEST,ABOUTTEST,SECMGRTEST) DO (
+  set TEST_DIR=build\%AJ_OS%\%AJ_CPU%\%VARIANT%\test\!TDIR[%%T]!\bin
+
+  set "DOTEST="
+  IF [%%T]==[SECMGRTEST] IF EXIST %TEST_DIR%\%%T.exe set DOTEST=1
+  IF NOT [%%T]==[SECMGRTEST] set DOTEST=1
+
+  IF defined DOTEST @call :runtest %%T %TEST_DIR%
+)
+
 @call :end
+
+:runtest
+    SET TEST_NAME=%1
+    SET TEST_DIR=%2
+
+    del /F /Q %HOME%\*
+    del /F /Q %TEMP%\*
+
+    @echo START %TEST_NAME%
+    @call :dt START %TEST_NAME%
+    cmd /c %TEST_DIR%\%TEST_NAME%.exe --gtest_catch_exceptions=0 2>;1 | tee %TEST_NAME%.log
+    @call :errorcheck
+    @call :dumpcheck %TEST_NAME% %TEST_DIR%
+    findstr /c:"exiting with status 0" %TEST_NAME%.log
+    @call :errorcheck
+    @call :dt END %TEST_NAME%
+exit /b
+
+
+:dumpcheck
+    sleep 1
+    FOR /F "tokens=*" %%a IN ('tlist -p windbg') DO SET windbgPid=%%a
+
+    IF %windbgPid% GTR -1 (
+       sleep 30
+       kill -f %windbgPid%
+    )
+
+    IF EXIST %DUMP_LOCATION% (
+        SET TEST_NAME=%1
+        SET TEST_DIR=%2
+
+        move %DUMP_LOCATION% artifacts\%TEST_NAME%.dmp
+        move %TEST_DIR%\%TEST_NAME%.pdb artifacts\%TEST_NAME%.pdb
+        move %TEST_DIR%\%TEST_NAME%.exe artifacts\%TEST_NAME%.exe
+        @echo captured dump for %TEST_NAME%.exe
+    )
+exit /b
+
+:errorcheck
+    @IF %ERRORLEVEL% GTR 0 (
+        ECHO ** error: ERROR TEST FAILED **
+        SET FAIL=1
+        REN %TEST_NAME%.log %TEST_NAME%-fail.log
+    )
+@exit /b
 
 :dt
 @for /F "usebackq tokens=1,2 delims==" %%i in (`@wmic os get LocalDateTime /VALUE 2^>NUL`) do @if '.%%i.'=='.LocalDateTime.' set ldt=%%j
@@ -80,6 +149,9 @@ ajtcsctest.exe
 
 :end
 pwd
+move *.log artifacts\
+dir /s/l/b *.log
+@systeminfo > artifacts\systeminfo.log
 @IF defined FAIL (ECHO FAIL FAIL FAIL & exit -1)
 
 @exit
