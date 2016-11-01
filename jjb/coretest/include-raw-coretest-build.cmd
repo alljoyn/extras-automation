@@ -26,7 +26,7 @@ set SQLITE_DIR=C:\tools\sqlite
 
 set HOME=%WORKSPACE%\home
 set TEMP=%WORKSPACE%\temp
-set OUTDIR=C:\artifacts\%RUN_TS%
+set OUTDIR=%WORKSPACE%\archive
 set BUILDROOT=%CD%
 set PFXDIR=%BUILDROOT%\core
 
@@ -97,7 +97,7 @@ echo "=== ALLJOYN TCSC UNIT TESTS COMPLETE ==="
 
 echo "=== STARTING ALLJOYN BVT SUITE ==="
 
-cd "%PFXDIR\alljoyn"
+cd "%PFXDIR%\alljoyn"
 cd
 
 mkdir %HOME% %TEMP% %OUTDIR%
