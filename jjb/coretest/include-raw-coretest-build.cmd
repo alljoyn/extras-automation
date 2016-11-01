@@ -2,7 +2,7 @@ prompt +
 
 setlocal EnableDelayedExpansion
 
-for /F "usebackq tokens=1,2 delims=.=" %%i in (`wmic os get LocalDateTime /VALUE 2^>NUL`) do if '.%%i.'=='.LocalDateTime.' set ldt=%%j
+for /F "usebackq tokens=1,2 delims=.=" %%i in (`wmic os get LocalDateTime /VALUE 2^>NUL`) do if '.%%i.'=='.LocalDateTime.' set RUN_TS=%%j
 
 echo "Test run started at %RUN_TS%"
 
@@ -30,6 +30,7 @@ set OUTDIR=%WORKSPACE%\%OUTDIRNAME%\
 set PFXDIR=%WORKSPACE%\core
 
 set "FAIL="
+set "FAILING_TASKS="
 
 set
 
@@ -60,7 +61,13 @@ FOR %%P IN (alljoyn,ajtcl,test) DO (
   git log -1
 )
 
-set SCONS_OPTS=-j%NUMBER_OF_PROCESSORS% MSVC_VERSION=%MSVC_VERSION% OS=%AJ_OS% CPU=%AJ_CPU% VARIANT=%VARIANT% WS=off
+IF [%AJ_OS%]==[win7] (
+  set SCONS_OPTS=-j%NUMBER_OF_PROCESSORS% VARIANT=%VARIANT% WS=off
+) ELSE (
+  set SCONS_OPTS=-j%NUMBER_OF_PROCESSORS% MSVC_VERSION=%MSVC_VERSION% OS=%AJ_OS% CPU=%AJ_CPU% VARIANT=%VARIANT% WS=off
+)
+
+mkdir %PFXDIR%\alljoyn\build\%AJ_OS%\%AJ_CPU%\%VARIANT%\dist
 
 set BUILD_OPTS[alljoyn]=DOCS=none BINDINGS=c,cpp,java V=1 BR=on
 set BUILD_OPTS[ajtcl]=DOCS=html BINDINGS=c,cpp,java
@@ -77,17 +84,15 @@ FOR %%N IN (alljoyn,ajtcl,test-scl) DO (
   set LOG_NAME=%%N-%RUN_TS%.log
 
   cmd /c scons %SCONS_OPTS% !BUILD_OPTS[%%N]! 2>&1 | tee %LOG_NAME%
-  @IF %ERRORLEVEL% GTR 0 (
-    ECHO =========SCONS FAILED=========
-    REN %LOG_NAME% %%N-%RUN_TS%-fail.log
-    set LOG_NAME=%%N-%RUN_TS%-fail.log
-    SET FAIL=1
-  )
+  @call :errorcheck %%N
   MOVE %LOG_NAME% %OUTDIR%
   @call :dt end scons 3
 )
 
 echo "=== BUILDS COMPLETE ==="
+
+rem Do not bother with unit tests or BVT suite if build fails
+@call :failcheck
 
 cd %WORKSPACE%
 dir /s/l/b *.exe
@@ -101,7 +106,7 @@ set LOG_NAME=%TEST_NAME%-%RUN_TS%.log
 
 dir /s/l/b *.exe
 ajtcsctest.exe 2>&1 | tee %LOG_NAME%
-@call :errorcheck
+@call :errorcheck %TEST_NAME%
 MOVE %LOG_NAME% %OUTDIR%
 
 echo "=== ALLJOYN TCSC UNIT TESTS COMPLETE ==="
@@ -119,6 +124,7 @@ set TDIR[ABOUTTEST]=cpp
 set TDIR[SECMGRTEST]=cpp
 
 FOR %%T IN (AJCHECK,AJCTEST,AJTEST,CMTEST,ABOUTTEST,SECMGRTEST) DO (
+  echo "=== STARTING %%T TEST RUN ==="
   set TEST_DIR=%PFXDIR%\alljoyn\build\%AJ_OS%\%AJ_CPU%\%VARIANT%\test\!TDIR[%%T]!\bin
 
   set "DOTEST="
@@ -126,11 +132,16 @@ FOR %%T IN (AJCHECK,AJCTEST,AJTEST,CMTEST,ABOUTTEST,SECMGRTEST) DO (
   IF NOT [%%T]==[SECMGRTEST] set DOTEST=1
 
   IF defined DOTEST call :runtest %%T !TEST_DIR!
+  echo "=== %%T TEST RUN COMPLETE ==="
 )
 
 echo "=== ALLJOYN BVT SUITE COMPLETE ==="
 
+@call :failcheck
 @call :end
+
+echo "Successful run"
+@exit
 
 :runtest
     SET TEST_NAME=%1
@@ -143,10 +154,10 @@ echo "=== ALLJOYN BVT SUITE COMPLETE ==="
     @call :dt START %TEST_NAME%
     set LOG_NAME=%TEST_NAME%-%RUN_TS%.log
     cmd /c %TEST_DIR%\%TEST_NAME%.exe --gtest_catch_exceptions=0 2>&1 | tee %LOG_NAME%
-    @call :errorcheck
+    @call :errorcheck %TEST_NAME%
     @call :dumpcheck %TEST_NAME% %TEST_DIR%
     findstr /c:"exiting with status 0" %LOG_NAME%
-    @call :errorcheck
+    @call :errorcheck %TEST_NAME%
     @call :dt END %TEST_NAME%
 exit /b
 
@@ -171,11 +182,14 @@ exit /b
 exit /b
 
 :errorcheck
+    SET TASK_NAME=%1
+
     @IF %ERRORLEVEL% GTR 0 (
-        ECHO ** error: ERROR TEST FAILED **
+        ECHO ** error: ERROR TASK FAILED: %TASK_NAME% **
         SET FAIL=1
-        REN %LOG_NAME% %TEST_NAME%-%RUN_TS%-fail.log
-        set LOG_NAME=%TEST_NAME%-%RUN_TS%-fail.log
+        SET FAILING_TASKS=%TASK_NAME% %FAILING_TASKS%
+        REN %LOG_NAME% %TASK_NAME%-%RUN_TS%-fail.log
+        set LOG_NAME=%TASK_NAME%-%RUN_TS%-fail.log
     )
 @exit /b
 
@@ -189,6 +203,17 @@ exit /b
 )
 @exit /b
 
+:failcheck
+
+@IF defined FAIL (
+  @call :end
+  echo Failing tasks: %FAILING_TASKS%
+  ECHO FAIL FAIL FAIL
+  exit -1
+)
+
+@exit /b
+
 :end
 pwd
 move *.log %OUTDIR%\
@@ -200,6 +225,4 @@ pwd
 
 dir /s/l/b %OUTDIRNAME%
 
-@IF defined FAIL (ECHO FAIL FAIL FAIL & exit -1)
-
-@exit
+@exit /b
