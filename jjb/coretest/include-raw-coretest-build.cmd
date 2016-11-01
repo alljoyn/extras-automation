@@ -26,7 +26,7 @@ set SQLITE_DIR=C:\tools\sqlite
 
 set HOME=%WORKSPACE%\home
 set TEMP=%WORKSPACE%\temp
-set OUTDIR=C:\artifacts\%RUN_TS%
+set OUTDIR=%WORKSPACE%\archive
 set BUILDROOT=%CD%
 set PFXDIR=%BUILDROOT%\core
 
@@ -82,6 +82,8 @@ FOR %%N IN (alljoyn,ajtcl,test-scl) DO (
 
 echo "=== BUILDS COMPLETE ==="
 
+mkdir %HOME% %TEMP% %OUTDIR%
+
 echo "=== STARTING ALLJOYN TCSC UNIT TESTS ==="
 
 cd "%PFXDIR%\test\scl"
@@ -92,15 +94,14 @@ set LOG_NAME=%TEST_NAME%-%RUN_TS%.log
 dir /s/l/b *.exe
 ajtcsctest.exe 2>&1 | tee %LOG_NAME%
 @call :errorcheck
+@IF defined FAIL (MOVE %TEST_NAME%-%RUN_TS%-fail.log %OUTDIR%) ELSE (MOVE %LOG_NAME% %OUTDIR%)
 
 echo "=== ALLJOYN TCSC UNIT TESTS COMPLETE ==="
 
 echo "=== STARTING ALLJOYN BVT SUITE ==="
 
-cd "%PFXDIR\alljoyn"
+cd "%PFXDIR%\alljoyn"
 cd
-
-mkdir %HOME% %TEMP% %OUTDIR%
 
 set TDIR[AJCHECK]=cpp
 set TDIR[AJCTEST]=c
