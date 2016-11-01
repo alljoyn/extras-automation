@@ -27,8 +27,9 @@ set SQLITE_DIR=C:\tools\sqlite
 set HOME=%WORKSPACE%\home
 set TEMP=%WORKSPACE%\temp
 set OUTDIR=%WORKSPACE%\archive
-set BUILDROOT=%CD%
-set PFXDIR=%BUILDROOT%\core
+set LOG_BACKUP_DIR=C:\artifacts\%RUN_TS%
+set OUTDIR=%WORKSPACE%\artifacts
+set PFXDIR=%WORKSPACE%\core
 
 set "FAIL="
 
@@ -67,6 +68,8 @@ set BUILD_OPTS[alljoyn]=DOCS=none BINDINGS=c,cpp,java V=1 BR=on
 set BUILD_OPTS[ajtcl]=DOCS=html BINDINGS=c,cpp,java
 set BUILD_OPTS[test-scl]=DOCS=html AJ_CORE_DIST_DIR=%PFXDIR%\alljoyn\build\%AJ_OS%\%AJ_CPU%\%VARIANT%\dist
 
+mkdir %HOME% %TEMP% %OUTDIR% %LOG_BACKUP_DIR%
+
 echo "=== STARTING BUILDS ==="
 
 FOR %%N IN (alljoyn,ajtcl,test-scl) DO (
@@ -75,14 +78,26 @@ FOR %%N IN (alljoyn,ajtcl,test-scl) DO (
   cd %PFXDIR%\!D!
   cd
   @call :dt start scons %VARIANT% 3
-  cmd /c scons %SCONS_OPTS% !BUILD_OPTS[%%N]!
-  @IF %ERRORLEVEL% GTR 0 (ECHO =========SCONS FAILED========= & exit -1)
+  set LOG_NAME=%%N-%RUN_TS%.log
+
+  cmd /c scons %SCONS_OPTS% !BUILD_OPTS[%%N]! 2>&1 | tee %LOG_NAME%
+  @IF %ERRORLEVEL% GTR 0 (
+    ECHO =========SCONS FAILED=========
+    REN %LOG_NAME% %%N-%RUN_TS%-fail.log
+    set LOG_NAME=%%N-%RUN_TS%-fail.log
+    copy %LOG_NAME% %LOG_BACKUP_DIR%
+    MOVE %LOG_NAME% %OUTDIR%
+    exit -1
+  )
+  copy %LOG_NAME% %LOG_BACKUP_DIR%
+  MOVE %LOG_NAME% %OUTDIR%
   @call :dt end scons 3
 )
 
 echo "=== BUILDS COMPLETE ==="
 
-mkdir %HOME% %TEMP% %OUTDIR%
+cd %WORKSPACE%
+dir /s/l/b *.exe
 
 echo "=== STARTING ALLJOYN TCSC UNIT TESTS ==="
 
@@ -94,7 +109,8 @@ set LOG_NAME=%TEST_NAME%-%RUN_TS%.log
 dir /s/l/b *.exe
 ajtcsctest.exe 2>&1 | tee %LOG_NAME%
 @call :errorcheck
-@IF defined FAIL (MOVE %TEST_NAME%-%RUN_TS%-fail.log %OUTDIR%) ELSE (MOVE %LOG_NAME% %OUTDIR%)
+copy %LOG_NAME% %LOG_BACKUP_DIR%
+MOVE %LOG_NAME% %OUTDIR%
 
 echo "=== ALLJOYN TCSC UNIT TESTS COMPLETE ==="
 
@@ -167,6 +183,7 @@ exit /b
         ECHO ** error: ERROR TEST FAILED **
         SET FAIL=1
         REN %LOG_NAME% %TEST_NAME%-%RUN_TS%-fail.log
+        set LOG_NAME=%TEST_NAME%-%RUN_TS%-fail.log
     )
 @exit /b
 
@@ -182,9 +199,11 @@ exit /b
 
 :end
 pwd
+copy *.log %LOG_BACKUP_DIR%\
 move *.log %OUTDIR%\
 dir /s/l/b *.log
 @systeminfo > %OUTDIR%\systeminfo.log
+copy %OUTDIR%\systeminfo.log %LOG_BACKUP_DIR%\
 @IF defined FAIL (ECHO FAIL FAIL FAIL & exit -1)
 
 @exit
