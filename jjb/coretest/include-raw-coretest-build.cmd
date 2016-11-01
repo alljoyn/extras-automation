@@ -2,7 +2,7 @@ prompt +
 
 setlocal EnableDelayedExpansion
 
-for /F "usebackq tokens=1,2 delims=.=" %%i in (`wmic os get LocalDateTime /VALUE 2^>NUL`) do if '.%%i.'=='.LocalDateTime.' set ldt=%%j
+for /F "usebackq tokens=1,2 delims=.=" %%i in (`wmic os get LocalDateTime /VALUE 2^>NUL`) do if '.%%i.'=='.LocalDateTime.' set RUN_TS=%%j
 
 echo "Test run started at %RUN_TS%"
 
@@ -60,7 +60,13 @@ FOR %%P IN (alljoyn,ajtcl,test) DO (
   git log -1
 )
 
-set SCONS_OPTS=-j%NUMBER_OF_PROCESSORS% MSVC_VERSION=%MSVC_VERSION% OS=%AJ_OS% CPU=%AJ_CPU% VARIANT=%VARIANT% WS=off
+IF [%AJ_OS%]==[win7] (
+  set SCONS_OPTS=-j%NUMBER_OF_PROCESSORS% VARIANT=%VARIANT% WS=off
+) ELSE (
+  set SCONS_OPTS=-j%NUMBER_OF_PROCESSORS% MSVC_VERSION=%MSVC_VERSION% OS=%AJ_OS% CPU=%AJ_CPU% VARIANT=%VARIANT% WS=off
+)
+
+mkdir %PFXDIR%\alljoyn\build\%AJ_OS%\%AJ_CPU%\%VARIANT%\dist
 
 set BUILD_OPTS[alljoyn]=DOCS=none BINDINGS=c,cpp,java V=1 BR=on
 set BUILD_OPTS[ajtcl]=DOCS=html BINDINGS=c,cpp,java
