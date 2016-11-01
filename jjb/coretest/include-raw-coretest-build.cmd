@@ -27,8 +27,9 @@ set SQLITE_DIR=C:\tools\sqlite
 set HOME=%WORKSPACE%\home
 set TEMP=%WORKSPACE%\temp
 set OUTDIR=%WORKSPACE%\archive
-set BUILDROOT=%CD%
-set PFXDIR=%BUILDROOT%\core
+set LOG_BACKUP_DIR=C:\artifacts\%RUN_TS%
+set OUTDIR=%WORKSPACE%\artifacts
+set PFXDIR=%WORKSPACE%\core
 
 set "FAIL="
 
@@ -75,7 +76,10 @@ FOR %%N IN (alljoyn,ajtcl,test-scl) DO (
   cd %PFXDIR%\!D!
   cd
   @call :dt start scons %VARIANT% 3
-  cmd /c scons %SCONS_OPTS% !BUILD_OPTS[%%N]!
+  set BUILD_NAME=%%N
+  set LOG_NAME=%BUILD_NAME%-%RUN_TS%.log
+
+  cmd /c scons %SCONS_OPTS% !BUILD_OPTS[%%N]! 2>&1 | tee %LOG_NAME%
   @IF %ERRORLEVEL% GTR 0 (ECHO =========SCONS FAILED========= & exit -1)
   @call :dt end scons 3
 )
@@ -102,6 +106,8 @@ echo "=== STARTING ALLJOYN BVT SUITE ==="
 
 cd "%PFXDIR%\alljoyn"
 cd
+
+mkdir %HOME% %TEMP% %OUTDIR% %LOG_BACKUP_DIR%
 
 set TDIR[AJCHECK]=cpp
 set TDIR[AJCTEST]=c
@@ -182,9 +188,11 @@ exit /b
 
 :end
 pwd
+copy *.log %LOG_BACKUP_DIR%\
 move *.log %OUTDIR%\
 dir /s/l/b *.log
 @systeminfo > %OUTDIR%\systeminfo.log
+copy %OUTDIR%\systeminfo.log %LOG_BACKUP_DIR%\
 @IF defined FAIL (ECHO FAIL FAIL FAIL & exit -1)
 
 @exit
