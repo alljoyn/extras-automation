@@ -2,8 +2,7 @@ prompt +
 
 setlocal EnableDelayedExpansion
 
-for /F "usebackq tokens=1,2 delims==" %%i in (`wmic os get LocalDateTime /VALUE 2^>NUL`) do if '.%%i.'=='.LocalDateTime.' set ldt=%%j
-for /F "tokens=1 delims=." %%a in ("%ldt%") do (set RUN_TS=%%a)
+for /F "usebackq tokens=1,2 delims=.=" %%i in (`wmic os get LocalDateTime /VALUE 2^>NUL`) do if '.%%i.'=='.LocalDateTime.' set ldt=%%j
 
 echo "Test run started at %RUN_TS%"
 
@@ -26,9 +25,9 @@ set SQLITE_DIR=C:\tools\sqlite
 
 set HOME=%WORKSPACE%\home
 set TEMP=%WORKSPACE%\temp
-set OUTDIR=%WORKSPACE%\archive
-set BUILDROOT=%CD%
-set PFXDIR=%BUILDROOT%\core
+set OUTDIRNAME=artifacts
+set OUTDIR=%WORKSPACE%\%OUTDIRNAME%\
+set PFXDIR=%WORKSPACE%\core
 
 set "FAIL="
 
@@ -37,7 +36,7 @@ set
 reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug" /s
 
 rd /s /q %PFXDIR%
-mkdir %PFXDIR%
+mkdir %PFXDIR% %HOME% %TEMP% %OUTDIR%
 cd %PFXDIR%
 
 REM check out each project's code from git
@@ -75,14 +74,23 @@ FOR %%N IN (alljoyn,ajtcl,test-scl) DO (
   cd %PFXDIR%\!D!
   cd
   @call :dt start scons %VARIANT% 3
-  cmd /c scons %SCONS_OPTS% !BUILD_OPTS[%%N]!
-  @IF %ERRORLEVEL% GTR 0 (ECHO =========SCONS FAILED========= & exit -1)
+  set LOG_NAME=%%N-%RUN_TS%.log
+
+  cmd /c scons %SCONS_OPTS% !BUILD_OPTS[%%N]! 2>&1 | tee %LOG_NAME%
+  @IF %ERRORLEVEL% GTR 0 (
+    ECHO =========SCONS FAILED=========
+    REN %LOG_NAME% %%N-%RUN_TS%-fail.log
+    set LOG_NAME=%%N-%RUN_TS%-fail.log
+    SET FAIL=1
+  )
+  MOVE %LOG_NAME% %OUTDIR%
   @call :dt end scons 3
 )
 
 echo "=== BUILDS COMPLETE ==="
 
-mkdir %HOME% %TEMP% %OUTDIR%
+cd %WORKSPACE%
+dir /s/l/b *.exe
 
 echo "=== STARTING ALLJOYN TCSC UNIT TESTS ==="
 
@@ -94,7 +102,7 @@ set LOG_NAME=%TEST_NAME%-%RUN_TS%.log
 dir /s/l/b *.exe
 ajtcsctest.exe 2>&1 | tee %LOG_NAME%
 @call :errorcheck
-@IF defined FAIL (MOVE %TEST_NAME%-%RUN_TS%-fail.log %OUTDIR%) ELSE (MOVE %LOG_NAME% %OUTDIR%)
+MOVE %LOG_NAME% %OUTDIR%
 
 echo "=== ALLJOYN TCSC UNIT TESTS COMPLETE ==="
 
@@ -167,6 +175,7 @@ exit /b
         ECHO ** error: ERROR TEST FAILED **
         SET FAIL=1
         REN %LOG_NAME% %TEST_NAME%-%RUN_TS%-fail.log
+        set LOG_NAME=%TEST_NAME%-%RUN_TS%-fail.log
     )
 @exit /b
 
@@ -185,6 +194,12 @@ pwd
 move *.log %OUTDIR%\
 dir /s/l/b *.log
 @systeminfo > %OUTDIR%\systeminfo.log
+
+cd %WORKSPACE%
+pwd
+
+dir /s/l/b %OUTDIRNAME%
+
 @IF defined FAIL (ECHO FAIL FAIL FAIL & exit -1)
 
 @exit
