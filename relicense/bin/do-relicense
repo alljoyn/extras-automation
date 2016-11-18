@@ -1,0 +1,106 @@
+#!/usr/bin/perl -w
+use strict;
+
+my $DEBUG = 1;
+use Data::Dumper;
+
+use JSON::XS;
+use LWP::UserAgent;
+use HTML::TreeBuilder::XPath;
+
+my $json = JSON::XS->new->utf8;
+my $ua = LWP::UserAgent->new;
+
+my $xpath_query =
+  {
+   commit_info_date    => q{//table[@class="commit-info"]//tr[1]/td[@class="right"]},
+   commit_info_subject => q{//div[@class="commit-subject"]},
+  };
+
+my $domain = q{allseenalliance.org};
+
+my $gerrit_host = qq{git.$domain};
+my $gerrit_port = 29418;
+
+my $git_host = qq{cgit.$domain};
+
+my( %branch );
+
+# Exceptions to filter out projects known not to be updating licenses can go here.
+my $proj_skip_rx = qr{
+                       (
+                         ^All-Users$ |
+                         ^$
+                       )
+                   }x;
+
+my $repo_data_json_file = '/tmp/alljoyn-repos-data.json';
+if( -f $repo_data_json_file ){
+  my $json_str = do {
+    open( my( $json_fh ), q{<}, $repo_data_json_file )
+      or die "couldn't open json file $repo_data_json_file: $!";
+    local undef $/;
+    <$json_fh>;
+  };
+  %branch = %{ $json->decode( $json_str ) };
+}else{
+
+  my @project = split(/\n/, qx{ssh -p ${gerrit_port} ${gerrit_host} gerrit ls-projects});
+
+  foreach my $proj ( @project ){
+    next if( $proj =~ /$proj_skip_rx/ );
+
+    print STDERR ("Project: [$proj]\n") if $DEBUG;
+
+    my $gerrit_url = qq{https://${gerrit_host}/gerrit/${proj}.git};
+
+    my $cgit_url = qq{https://${git_host}/${proj}.git};
+    # TODO: gather list of branches here
+    my @remote = split(/\n/, qx{git ls-remote --heads $gerrit_url});
+    foreach my $remote (@remote){
+      my($commit_id,$headname) = split(/\s+/, $remote);
+
+      my($branch_name) = ($headname =~ m{refs/heads/(.+)});
+
+      my $branch = {
+                    id => $commit_id,
+                    name => $branch_name,
+                    date => undef,
+                    subject => undef,
+                   };
+
+      my $url = "$cgit_url/commit/?id=${commit_id}";
+
+      print STDERR qq{Now fetching url [$url]\n} if $DEBUG;
+      my $response = $ua->get($url);
+
+      print STDERR qq{Now parsing content as HTML\n} if $DEBUG;
+      my $content = $response->decoded_content;
+
+      my $tree = HTML::TreeBuilder::XPath->new;
+      $tree->parse($content);
+      $tree->eof;
+
+      # extract date
+      print STDERR qq{Now extracting date\n} if $DEBUG;
+      $branch->{date}    = $tree->findnodes( $xpath_query->{commit_info_date}    )->[0]->as_text;
+      print STDERR qq{Date string: [$branch->{date}]\n} if $DEBUG;
+
+      # extract subject
+      print STDERR qq{Now extracting subject\n} if $DEBUG;
+      $branch->{subject} = $tree->findnodes( $xpath_query->{commit_info_subject} )->[0]->content_array_ref->[0];
+      print STDERR qq{Subject string: [$branch->{subject}]\n} if $DEBUG;
+
+      $tree = $tree->delete;
+
+      next if( $branch->{subject} eq 'Initial empty repository' );
+
+      $branch{$branch_name} = $branch;
+
+      exit 0;
+    }
+  }
+  # TODO: encode as JSON and write to $repo_data_json_file
+}
+
+
