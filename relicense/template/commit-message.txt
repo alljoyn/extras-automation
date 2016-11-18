@@ -1,0 +1,16 @@
+Replace AllSeenAlliance License with Apache License Version 2.0
+http://www.apache.org/licenses/LICENSE-2.0
+
+* Executed in batch by
+  https://cgit.allseenalliance.org/extras/automation.git/tree/relicense/bin/do-relicense
+* Patch review took place here:
+  https://git.allseenalliance.org/gerrit/#/c/9377/
+
+* For each branch of each project of the AllJoyn Open Source Project
+  gerrit repository
+- search / replace old license with new in all matching files
+- search / replace old copyright with new in all files which only
+  include copyright
+- assign copyright to Open Connectivity Foundation, AllJoyn Open
+  Source Project Contributors and others.
+- propose changes for review by commiters
