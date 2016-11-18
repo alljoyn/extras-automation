@@ -1,0 +1,7 @@
+#!/bin/bash
+
+apt-get install \
+        libwww-perl \
+        libjson-xs-perl \
+        libhtml-selector-xpath-perl \
+        libhtml-treebuilder-xpath-perl
