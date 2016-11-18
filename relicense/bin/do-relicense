@@ -1,0 +1,590 @@
+#!/usr/bin/perl -w
+use strict;
+
+my $DEBUG = $ENV{DEBUG} // 0;
+my $FORCE = $ENV{FORCE} // 0;
+use Data::Dumper;
+
+use JSON::XS;
+use LWP::UserAgent;
+use HTML::TreeBuilder::XPath;
+
+use Time::HiRes qw ( time usleep );
+
+use File::Spec;
+use File::Basename;
+use FindBin;
+use Cwd;
+use POSIX qw(ceil);
+
+my $initial_cwd = $ENV{PWD};
+
+my $json = JSON::XS->new->utf8->pretty;
+my $ua = LWP::UserAgent->new;
+
+my $allseen_copyright_start = 'Copyright(.*)AllSeen Alliance. All rights reserved.';
+my $allseen_copyright_end = 'OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.';
+
+my $allseen_copyright_start_rx = qr/$allseen_copyright_start/;
+my $allseen_copyright_end_rx = qr/$allseen_copyright_end/;
+
+my $license_start_rx = qr/^(.*)($allseen_copyright_start_rx)(.*)$/;
+my $license_end_rx = qr/^(.*)($allseen_copyright_end_rx)(.*)$/;
+
+my $new_copyright = 'Copyright (c) 2016 Open Connectivity Foundation and AllJoyn Open Source Project Contributors and others.';
+
+my $allseen_license_rx = qr{(${allseen_copyright_start_rx}.*${allseen_copyright_end_rx})}ms;
+
+my $xpath_query =
+  {
+   commit_info_date    => q{//table[@class="commit-info"]//tr[1]/td[@class="right"]},
+   commit_info_subject => q{//div[@class="commit-subject"]},
+  };
+
+my $domain = q{allseenalliance.org};
+
+my $gerrit_host = qq{git.$domain};
+my $gerrit_port = 29418;
+
+my $git_host = qq{cgit.$domain};
+
+my( %project );
+
+# Exceptions to filter out projects known not to be updating licenses can go here.
+my $proj_skip_rx = qr{
+                       (
+                         ^All-Users$ |
+                         ^$
+                       )
+                   }x;
+
+my $scriptname    = $FindBin::Script;
+my $scriptdirname = $FindBin::Bin;
+
+my $temp_dir = File::Spec->catfile('','tmp',$scriptname);
+my $stats_dir = File::Spec->catfile('','tmp',"${scriptname}-stats");
+
+system(qq{rm -rf ${temp_dir}}) if $FORCE;
+system(qq{rm -rf ${stats_dir}});
+system(qq{mkdir -p ${temp_dir} ${stats_dir}});
+
+my $repo_data_json_file = File::Spec->catfile($temp_dir,'alljoyn-repos-data.json');
+
+sub save_repo_data {
+  my( $project ) = @_;
+
+  # remove projects with no branches
+  foreach my $pname ( keys %$project ){
+    if( scalar( keys %{$project->{$pname}->{branch}} ) == 0 ){
+      delete $project->{$pname};
+    }
+  }
+
+  my $json_str = $json->encode( $project );
+  open( my($json_fh), q{>}, $repo_data_json_file )
+    or die "couldn't open json file [$repo_data_json_file]: $!";
+
+  print $json_fh $json_str;
+}
+
+my $template_dir = Cwd::abs_path( File::Spec->catfile($scriptdirname, '..', 'template') );
+
+my $template_file = File::Spec->catfile($template_dir, 'new_license.txt');
+my $commit_template_file = File::Spec->catfile($template_dir,'commit-message.txt');
+my $license_file = File::Spec->catfile($template_dir,'LICENSE-2.0' );
+
+my $license_file_basename = basename $license_file;
+
+if( -f $repo_data_json_file ){
+  my $json_str = do {
+    open( my( $json_fh ), q{<}, $repo_data_json_file )
+      or die "couldn't open json file $repo_data_json_file: $!";
+
+    my @line = (<$json_fh>);
+    join($/,@line);
+  };
+  %project = %{ $json->decode( $json_str ) };
+}else{
+
+  my $json_str = qx{ssh -p ${gerrit_port} ${gerrit_host} gerrit ls-projects --format=JSON};
+  my $project = $json->decode( $json_str );
+  my @project = keys %$project;
+
+  foreach my $pname ( @project ){
+    next if( $pname =~ /$proj_skip_rx/ );
+    next if( $project->{$pname}->{state} eq 'READ_ONLY' );
+
+    my %branch;
+
+    $project{$pname} = { name => $pname,
+                         branch => \%branch,
+                       };
+
+    print ("Project: [$pname]$/");
+
+    my $gerrit_url = qq{ssh://${gerrit_host}:${gerrit_port}/${pname}};
+
+    my $cgit_url = qq{https://${git_host}/${pname}.git};
+
+    my @remote = split($/, qx{git ls-remote --heads $gerrit_url 2>/dev/null});
+    foreach my $remote (@remote){
+      my($commit_id,$headname) = split(/\s+/, $remote);
+
+      my($branch_name) = ($headname =~ m{refs/heads/(.+)});
+
+      next if( $branch_name =~ /_re-license$/ ||
+               $branch_name =~ /^feature/
+               );
+
+      print ("  Branch: [$branch_name]$/");
+
+      my $branch = {
+                    id => $commit_id,
+                    name => $branch_name,
+                    date => undef,
+                    subject => undef,
+                   };
+
+      my $url = "$cgit_url/commit/?id=${commit_id}";
+
+      my $response = $ua->get($url);
+
+      my $content = $response->decoded_content;
+
+      my $tree = HTML::TreeBuilder::XPath->new;
+      $tree->parse($content);
+      $tree->eof;
+
+      # Check for error
+      my @error_element = $tree->findnodes( q{//*[@id="cgit"]/div[@class="content"]/div[@class="error"]} );
+
+      if( @error_element ){
+        print STDERR qq{Error with branch: $error_element[0]->content_array_ref->[0]$/};
+        next;
+      }
+
+      # extract date
+      $branch->{date} = $tree->findnodes( $xpath_query->{commit_info_date} )->[0]->content_array_ref->[0];
+
+      # extract subject
+      $branch->{subject} = $tree->findnodes( $xpath_query->{commit_info_subject} )->[0]->content_array_ref->[0];
+
+      $tree = $tree->delete;
+
+      next if( $branch->{subject} eq 'Initial empty repository' );
+
+      print STDERR qq{  Subject string: [$branch->{subject}] [$branch->{date}]$/} if $DEBUG;
+
+      $branch{$branch_name} = $branch;
+    }
+  }
+
+  save_repo_data( \%project );
+}
+
+
+open( my( $template_fh ), q{<}, $template_file )
+  or die "couldn't open template file $template_file: $!";
+
+my( @template_line ) = <$template_fh>;
+chomp( @template_line );
+
+close( $template_fh );
+
+open( my( $commit_template_fh ), q{<}, $commit_template_file )
+  or die "couldn't open commit template file $commit_template_file: $!";
+
+my( @commit_template_line ) = <$commit_template_fh>;
+chomp( @commit_template_line );
+
+close( $template_fh );
+
+
+my $num_projects = scalar keys %project;
+
+my $max_proj_name_len = 0;
+my $max_branch_name_len = 0;
+
+# find max length for project name and branch name
+foreach my $pname ( keys %project ){
+  my $p = $project{$pname};
+  foreach my $bname ( keys %{$p->{branch}} ){
+    next unless length( $bname ) > $max_branch_name_len;
+    $max_branch_name_len = length( $bname );
+  }
+  next unless length( $pname ) > $max_proj_name_len;
+  $max_proj_name_len = length( $pname );
+}
+
+my $max_proj_branch_name_len = $max_proj_name_len + $max_branch_name_len;
+
+
+sub checkout_branch {
+  my( $bname ) = @_;
+
+  # Check out the branch from the gerrit remote
+  my $git_cmd = qq(git checkout -B ${bname} -qt remotes/gerrit/${bname});
+  my $git_output = qx($git_cmd 2>&1);
+}
+
+sub checkout_topic {
+  my( $bname, $gerrit_change ) = @_;
+
+  my $git_cmd = qq(git checkout -q -B ${bname}_re-license);
+
+  # create / checkout topic branch
+  my $git_output = qx($git_cmd 2>&1);
+}
+
+my %processed_files;
+sub update_file {
+  my( $fname, $bname ) = @_;
+
+  die("duplicate file $fname") if exists $processed_files{$fname};
+
+  $processed_files{$fname}++;
+
+  open( my( $fh ), q{+<}, $fname ) or die "couldn't open file ${fname}: $!";
+  chomp( my @lines = <$fh> );
+
+  my $content = join($/, @lines);
+
+  my( $comment_prefix, $line_prefix, $comment_suffix );
+
+  my( $license_start_line ) = grep { /$allseen_copyright_start_rx/ } @lines;
+  my( $license_end_line ) = grep { /$allseen_copyright_end_rx/ } @lines;
+
+  unless( $license_start_line ){
+    print STDERR "Branch $bname$/Filename: $fname$/";
+    die "bad file";
+  }
+
+  if ( defined $license_end_line && $license_start_line eq $license_end_line ) {
+    # full license is on a single line
+    my $new_license = join(' ', @template_line);
+    $content =~ s{$allseen_license_rx}{$new_license}ms;
+
+  } elsif ( $license_end_line ) {
+    # full license, multiple lines
+
+    # extract comment prefix, line prefix and comment suffix in use for this file
+    my( $start_prefix, $start, $date, $start_suffix ) =
+      ( $license_start_line =~ $license_start_rx );
+
+    my( $end_prefix, $end, $end_suffix ) =
+      ( $license_end_line =~ $license_end_rx );
+
+    $comment_prefix = $start_prefix;
+    if ( defined $start_prefix && $start_prefix eq $end_prefix ) {
+      $line_prefix = $start_prefix;
+    } else {
+      $line_prefix = $end_prefix;
+      $comment_suffix = $end_suffix;
+    }
+
+    my( $old_license ) = ( $content =~ m{$allseen_license_rx} );
+
+    my $first_line = $template_line[0];
+    # add correct comment syntax, remove trailing whitespace
+    my @new_license = map {
+      my $line = "${line_prefix}$_";
+      $line =~ s/\s+$//;
+      $line
+    } @template_line;
+
+    splice(@new_license,0,1,$first_line);
+
+    my $new_license = join($/, @new_license);
+
+    # replace old license with new text
+    $content =~ s{$allseen_license_rx}{$new_license}ms;
+
+  } elsif( !$license_end_line ) {
+    # partial license, copyright only
+    $content =~ s{$allseen_copyright_start_rx}{$new_copyright}ms;
+  }
+
+  seek($fh,0,0);
+  print $fh $content;
+  truncate( $fh, tell $fh );
+  close $fh;
+
+}
+
+# Query gerrit for all re-license changes
+print STDERR 'fetching list of changes with topic matching re-license...' if $DEBUG;
+my $gerrit_cmd = qq{ssh -p ${gerrit_port} ${gerrit_host} gerrit query --format=JSON topic:^.*_re-license --current-patch-set};
+my( @gerrit_output ) = qx{$gerrit_cmd};
+print STDERR "done$/" if $DEBUG;
+my $gerrit_status = $json->decode( pop( @gerrit_output ) );
+
+my $branch_stats_fmt = q{%-*s: %4i/%-4i files processed in %.2fs: %.2f/s};
+
+print STDERR "Performing house keeping...";
+system(qq{find ${temp_dir} -name 'rebase-merge' -type d -print0 | xargs -0 rm -rf});
+foreach my $pname ( sort keys %project ){
+  if( $pname =~ m{^(.+)/([^/]+)$} ){
+    my $dir = qq{${temp_dir}/$1};
+    system(qq{mkdir -p $dir});
+    chdir( $dir );
+  }else{
+    chdir( $temp_dir );
+  }
+  my $p = $project{$pname};
+  my $num_branches = scalar keys %{$p->{branch}};
+  next unless $num_branches > 0;
+
+  my $gerrit_url = qq{ssh://${gerrit_host}:${gerrit_port}/${pname}};
+
+  my $pdir = qq{${temp_dir}/${pname}};
+
+#  system(qq{rm -rf ${pdir}}); # TODO: remove this
+
+  my $git_output = qx(git clone -q $gerrit_url 2>/dev/null) unless -d $pdir;
+  chdir( $pdir );
+
+  if( -d ( my( $rebase_dir ) = '.git/rebase-merge' ) ){
+    system("rm -rf $rebase_dir");
+  }
+
+  if( qx{git remote get-url gerrit 2>&1} =~ /^fatal/ ){
+    system(qq(git remote add gerrit $gerrit_url));
+  }else{
+    system(qq(git remote set-url gerrit $gerrit_url));
+  }
+
+  system(qq(git prune));
+  system(qq(rm -f .git/gc.log));
+}
+print STDERR "done.$/";
+
+
+print STDERR qq{Updating licenses in $num_projects projects$/} if $DEBUG;
+
+my @chillins;
+$SIG{INT} = sub {
+  kill( 'INT', @chillins );
+};
+my $pnum = 0;
+foreach my $pname ( sort keys %project ){
+  $pnum++;
+
+  my $p = $project{$pname};
+  my $num_branches = scalar keys %{$p->{branch}};
+  next unless $num_branches > 0;
+
+  my $pdir = qq{${temp_dir}/${pname}};
+  chdir( $pdir );
+
+  my $pid = fork();
+  die "could not fork: $!" if not defined $pid;
+  if( $pid ){
+    push(@chillins, $pid);
+    next;
+  }
+
+  system(qq{git fetch gerrit >/dev/null 2>&1 && git reset --hard > /dev/null 2>&1 && git ls-files --others --exclude-standard | xargs rm -rf /tmp/nofile});
+
+  my $bnum = 0;
+  foreach my $bname ( sort keys %{$p->{branch}} ){
+    $bnum++;
+
+    my $git_output = checkout_branch( $bname );
+
+    die "could not check out branch $bname of project $pname:$/$git_output" unless $? == 0;
+
+    # find all files
+    my @all_files = split($/, qx{find . -type f -a -not -path '*.git*'});
+    my $num_files = scalar @all_files;
+
+    # find files with old license
+    my @matching_files = split($/, qx(grep --exclude './.git/*' -rsil -E '${allseen_copyright_start}' .));
+    my $num_matching_files = scalar @matching_files;
+
+    # find files without old license
+    my @unmatching_files = split($/, qx(grep --exclude './.git/*' -rsiL -E '${allseen_copyright_start}' .));
+    my $num_unmatching_files = scalar @unmatching_files;
+
+    my $topic_name = "${bname}_re-license";
+
+    my( @open_gerrit_change ) =
+      sort { $a->{number} <=> $b->{number} }
+      grep { $_->{project} eq $pname &&
+             $_->{branch} eq $bname &&
+             $_->{open} }
+      map { $json->decode( $_ ) }
+      @gerrit_output;
+
+    if( $num_matching_files == 0 ){
+      # Remove this branch from the %project hash
+      delete $project{$pname}->{branch}->{$bname};
+
+      # There should not be a change number in the case that there are
+      # 0 changed files.  If we erroneously created one, abandon.
+      foreach my $open_change ( @open_gerrit_change ){
+        my $ref_fname = ".git/refs/heads/${topic_name}";
+        unlink $ref_fname if( -f $ref_fname );
+        print STDERR ( qq{ssh -p ${gerrit_port} ${gerrit_host} gerrit review --abandon $open_change->{number}}, $/);
+      }
+
+      # save project JSON so we don't use this branch next pass.
+      save_repo_data( \%project );
+
+      next;
+    }
+
+    my $gerrit_change = shift @open_gerrit_change;
+
+    if( $gerrit_change ){
+      # Die unless the topic branch subject matches
+      unless( $gerrit_change->{subject} =~ /Apache License Version 2.0/ms ){
+        die "gerrit change is not re-license";
+      }
+    }
+
+    checkout_topic( $bname, $gerrit_change );
+
+    # verify that we're on the topic branch
+    chomp( my $current_branch = qx{git rev-parse --abbrev-ref HEAD} );
+    unless( $current_branch eq $topic_name ){
+      die "We are currently on $current_branch and not $topic_name";
+    }
+
+    if( -d ( my( $rebase_dir ) = '.git/rebase-merge' ) ){
+      system('git rebase --abort');
+      system('rm -rf $rebase_dir')
+    }
+
+    my $git_cmd = qq{git rebase -s ours gerrit/$bname};
+    $git_output = qx($git_cmd);
+
+    die $git_output unless $? == 0;
+
+    # Check out the original version of the file
+    open( my( $git_checkout_fh ), q{|-}, qq{xargs -0 git checkout ${bname} } )
+      or die "could not open pipe to xargs: $!";
+
+    print $git_checkout_fh ( join("\0", @matching_files ) );
+
+    close $git_checkout_fh;
+
+    my $i = 0;
+    my $tenth = POSIX::ceil($num_matching_files / 10);
+
+    # Update all files
+    my $start_epoch = time;
+    %processed_files = ();
+    foreach my $fname ( @matching_files ){
+      update_file( $fname, $bname );
+    }
+    my $end_epoch = time;
+
+    my $elapsed = ($end_epoch - $start_epoch);
+    my $tx_per_s = $num_matching_files / $elapsed;
+
+    my $branch_stats_dir = qq{${stats_dir}/${pname}/${bname}};
+    system(qq{mkdir -p ${branch_stats_dir}});
+
+    # Record names of files which we have changed
+    my $changed_filename = File::Spec->catfile($branch_stats_dir,'changed.txt');
+    open( my( $branch_changed_fh ), q{>}, $changed_filename )
+      or die qq{could not open ${changed_filename} for writing};
+    print $branch_changed_fh ( join("\0", @matching_files ) );
+    close $branch_changed_fh;
+
+    # Record names of files which we have not changed
+    my $unchanged_filename = File::Spec->catfile($branch_stats_dir,'unchanged.txt');
+    open( my( $branch_unchanged_fh ), q{>}, $unchanged_filename )
+      or die qq{could not open ${unchanged_filename} for writing};
+    print $branch_unchanged_fh ( join($/, @unmatching_files), $/ );
+    close $branch_unchanged_fh;
+
+    # Inject the license file
+    system( qq(cp $license_file .) );
+
+    # Add the updated files to git
+    open( my( $git_add_fh ), q{|-}, q{xargs -0 git add -f} )
+      or die "could not open pipe to xargs: $!";
+
+    print $git_add_fh ( join("\0", @matching_files, $license_file_basename ) );
+    close $git_add_fh;
+
+    # Find all files matching the allseen copyright start marker
+    @matching_files = split($/, qx(grep --exclude './.git/*' -rsil -E '${allseen_copyright_start}' .));
+    # Find files matching OCF marker in this list
+    my(@updated_files) =  split($/, qx(grep -rsil 'Open Connectivity Foundation' @matching_files));
+
+    # Number of matching files is first set minus second set
+    my $new_num_matching_files = (scalar( @matching_files ) - scalar( @updated_files ));
+
+    # Error if we missed any licenses
+    if( $new_num_matching_files > 0 ){
+      print STDERR "$new_num_matching_files / $num_matching_files files still contain copyright!$/",
+        if $DEBUG;
+      exit 1;
+    }
+
+    # create / update the commit message file
+    my @commit_line = @commit_template_line;
+
+    # Inclue Change-Id if this is an amendment
+    push(@commit_line, '', qq{Change-Id: $gerrit_change->{id}}) if $gerrit_change;
+
+    my $commit_filename = File::Spec->catfile('','tmp','commit_file');
+
+    open( my $commit_file_fh, q{>}, $commit_filename )
+      or die "couldn't open ${commit_filename} for writing: $!";
+
+    print $commit_file_fh ( join($/, @commit_line ), $/ );
+
+    close $commit_file_fh;
+
+    my $commit_msg = qq{-F $commit_filename} . ($gerrit_change ? ' --amend' : '');
+
+    my $branch_line = sprintf($branch_stats_fmt,
+                              $max_proj_branch_name_len, join('/', $pname, $bname),
+                              $num_matching_files, $num_files,
+                              $elapsed, $tx_per_s
+                             );
+
+    # is this the same as the last commit?  If so, roll back
+    if( $gerrit_change &&
+        qx{git diff $gerrit_change->{currentPatchSet}->{revision} | diffstat} =~ m{^\s*0 files changed\s*$}
+      ){
+      # Change already submitted.  Revert.
+      system(q{git ls-files --others --exclude-standard | xargs rm -rf /tmp/nofile});
+      system('git reset --hard > /dev/null 2>&1');
+      print STDERR ( $branch_line, ' (unchanged)', $/ ) if $DEBUG;
+      next;
+    }
+
+    # commit signed change
+    $git_cmd = qq{git commit -s $commit_msg};
+    $git_output = qx{$git_cmd 2>&1};
+
+    die $git_output unless $? == 0;
+
+    # submit to gerrit
+    $git_output = qx{git review -D -R --track ${bname} 2>&1};
+
+    if ( $git_output =~ /No changes between prior commit/msi ) {
+      # No worries here.
+      warn "git review rejected due to change existing.  Why?";
+    } elsif ( $git_output =~ /error/i ) {
+      die $git_output;
+    }
+
+    print STDERR ( $branch_line, ' (changed)', $/ ) if $DEBUG;
+
+  }
+  # child cleans up after finishing processing branches
+  exit 0;
+}
+
+foreach my $child ( @chillins ){
+  my $finished_pid = wait();
+}
+
+END {
+  chdir( $initial_cwd );
+}
