@@ -1,0 +1,279 @@
+#!/usr/bin/perl -w
+use strict;
+
+my $DEBUG = $ENV{DEBUG} // 0;
+my $FORCE = $ENV{FORCE} // 0;
+use Data::Dumper;
+
+use JSON::XS;
+use LWP::UserAgent;
+use HTML::TreeBuilder::XPath;
+
+use File::Spec;
+use FindBin;
+use Cwd;
+
+my $initial_cwd = $ENV{PWD};
+
+my $json = JSON::XS->new->utf8->pretty;
+my $ua = LWP::UserAgent->new;
+
+my $allseen_copyright_start = 'Copyright AllSeen Alliance. All rights reserved.';
+my $allseen_copyright_end = 'OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.';
+
+my $allseen_license_rx = qr{(${allseen_copyright_start}.*${allseen_copyright_end})}ms;
+
+my $xpath_query =
+  {
+   commit_info_date    => q{//table[@class="commit-info"]//tr[1]/td[@class="right"]},
+   commit_info_subject => q{//div[@class="commit-subject"]},
+  };
+
+my $domain = q{allseenalliance.org};
+
+my $gerrit_host = qq{git.$domain};
+my $gerrit_port = 29418;
+
+my $git_host = qq{cgit.$domain};
+
+my( %project );
+
+# Exceptions to filter out projects known not to be updating licenses can go here.
+my $proj_skip_rx = qr{
+                       (
+                         ^All-Users$ |
+                         ^$
+                       )
+                   }x;
+
+my $scriptname    = $FindBin::Script;
+my $scriptdirname = $FindBin::Bin;
+
+my $temp_dir = qq{/tmp/${scriptname}};
+
+system(qq{rm -rf ${temp_dir}}) if $FORCE;
+system(qq{mkdir -p ${temp_dir}});
+
+my $repo_data_json_file = qq{${temp_dir}/alljoyn-repos-data.json};
+
+print STDERR "json file: $repo_data_json_file\n" if $DEBUG;
+
+my $template_file = Cwd::abs_path( File::Spec->catfile($scriptdirname, '..', 'template', 'new_license.txt') );
+
+print STDERR ( "Template file: $template_file\n" ) if $DEBUG;
+
+if( -f $repo_data_json_file ){
+  my $json_str = do {
+    open( my( $json_fh ), q{<}, $repo_data_json_file )
+      or die "couldn't open json file $repo_data_json_file: $!";
+    local undef $/;
+    <$json_fh>;
+  };
+  %project = %{ $json->decode( $json_str ) };
+}else{
+
+  my @project = split(/\n/, qx{ssh -p ${gerrit_port} ${gerrit_host} gerrit ls-projects});
+
+  foreach my $proj ( @project ){
+    next if( $proj =~ /$proj_skip_rx/ );
+
+    my %branch;
+
+    $project{$proj} = { name => $proj,
+                        branch => \%branch,
+                      };
+
+    print ("Project: [$proj]\n");
+
+    my $gerrit_url = qq{ssh://${gerrit_host}:${gerrit_port}/${proj}};
+
+    my $cgit_url = qq{https://${git_host}/${proj}.git};
+
+    my @remote = split(/\n/, qx{git ls-remote --heads $gerrit_url});
+    foreach my $remote (@remote){
+      my($commit_id,$headname) = split(/\s+/, $remote);
+
+      my($branch_name) = ($headname =~ m{refs/heads/(.+)});
+
+      print ("  Branch: [$branch_name]\n");
+
+      my $branch = {
+                    id => $commit_id,
+                    name => $branch_name,
+                    date => undef,
+                    subject => undef,
+                   };
+
+      my $url = "$cgit_url/commit/?id=${commit_id}";
+
+      print STDERR qq{Now fetching url [$url]\n} if $DEBUG;
+      my $response = $ua->get($url);
+
+      print STDERR qq{Now parsing content as HTML\n} if $DEBUG;
+      my $content = $response->decoded_content;
+
+      my $tree = HTML::TreeBuilder::XPath->new;
+      $tree->parse($content);
+      $tree->eof;
+
+      # Check for error
+      my @error_element = $tree->findnodes( q{//*[@id="cgit"]/div[@class="content"]/div[@class="error"]} );
+
+      if( @error_element ){
+        print STDERR qq{Error with branch: }, $error_element[0]->content_array_ref->[0], "\n";
+        next;
+      }
+
+      # extract date
+      print STDERR qq{Now extracting date\n} if $DEBUG;
+      $branch->{date} = $tree->findnodes( $xpath_query->{commit_info_date} )->[0]->content_array_ref->[0];
+      print STDERR qq{Date string: [$branch->{date}]\n} if $DEBUG;
+
+      # extract subject
+      print STDERR qq{Now extracting subject\n} if $DEBUG;
+      $branch->{subject} = $tree->findnodes( $xpath_query->{commit_info_subject} )->[0]->content_array_ref->[0];
+      print STDERR qq{Subject string: [$branch->{subject}]\n} if $DEBUG;
+
+      $tree = $tree->delete;
+
+      next if( $branch->{subject} eq 'Initial empty repository' );
+
+      $branch{$branch_name} = $branch;
+    }
+  }
+
+  my $json_str = $json->encode( \%project );
+  open( my($json_fh), q{>}, $repo_data_json_file )
+    or die "couldn't open json file [$repo_data_json_file]: $!";
+
+  print $json_fh $json_str;
+}
+
+
+my @template_line = do {
+    open( my( $template_fh ), q{<}, $template_file )
+      or die "couldn't open template file $template_file: $!";
+    <$template_fh>;
+  };
+
+print STDERR scalar keys %project, qq{ projects\n};
+
+my $max_proj_name_len = 0;
+
+foreach my $pname ( keys %project ){
+  next unless length( $pname ) > $max_proj_name_len;
+  $max_proj_name_len = length( $pname );
+}
+
+foreach my $pname ( keys %project ){
+  if( $pname =~ m{^(.+)/([^/]+)$} ){
+    my $dir = qq{${temp_dir}/$1};
+    system(qq{mkdir -p $dir});
+    chdir( $dir );
+  }else{
+    chdir( $temp_dir );
+  }
+  my $p = $project{$pname};
+  print STDERR sprintf( q{%*s: %*i branch(es)}, $max_proj_name_len, $pname, 2, scalar keys %{$p->{branch}} ), "\n";
+
+  my $gerrit_url = qq{ssh://${gerrit_host}:${gerrit_port}/${pname}};
+
+  my $pdir = qq{${temp_dir}/${pname}};
+
+  system(qq{rm -rf ${pdir}}); # TODO: remove this
+
+  my $git_output = qx(git clone $gerrit_url);
+  chdir( $pdir );
+
+  foreach my $bname ( keys %{$p->{branch}} ){
+    $git_output = qx(git checkout ${bname});
+
+    # TODO: create/checkout topic branch
+    $git_output = qx(git checkout -b ${bname}_re-license);
+
+    # TODO: find files with old license
+    my @matching_files = split(/\n/, qx(grep -rsil '${allseen_copyright_start}' .));
+    foreach my $fname ( @matching_files ){
+      print STDERR "Match: ${fname}\n" if $DEBUG;
+
+      open( my( $fh ), q{<}, $fname ) or die "couldn't open file ${fname}: $!";
+      my @lines = <$fh>;
+      close $fh;
+
+      my $content = join('\n', @lines);
+
+      my( $comment_prefix, $line_prefix, $comment_suffix );
+
+      if( $fname =~ /\.[ch]$/ ){
+        $comment_prefix = '/*';
+        $line_prefix    = ' * ';
+        $comment_suffix = ' */';
+      }elsif( $fname =~ /^Scons/ ||
+              $fname =~ /\.(sh|py|pl)$/
+            ){
+        $comment_prefix = '#';
+        $line_prefix    = '# ';
+        $comment_suffix = '#';
+      }else{
+        my( $license_start_line ) = grep { /$allseen_copyright_start/ } @lines;
+        my( $start_prefix, $start, $start_suffix ) =
+          ( $license_start_line =~ /^(.*)($allseen_copyright_start)(.*)$/ );
+
+        my( $license_end_line ) = grep { /$allseen_copyright_end/ } @lines;
+        my( $end_prefix, $end, $end_suffix ) =
+          ( $license_end_line =~ /^(.*)($allseen_copyright_end)(.*)$/ );
+
+        # extract comment prefix, line prefix and comment suffix in use for this file
+
+        $comment_prefix = $start_prefix;
+        if( $start_prefix eq $end_prefix ){
+          $line_prefix = $start_prefix;
+        }else{
+          $line_prefix = $end_prefix;
+          $comment_suffix = $end_suffix;
+        }
+
+      print STDERR (
+                    "License start line: $license_start_line\n",
+                    "License   end line: $license_end_line\n",
+                   ) if $DEBUG;
+      }
+
+      print STDERR ( "Comment Prefix: $comment_prefix\n",
+                     "Line prefix: $line_prefix\n",
+                     "Comment Suffix: $comment_suffix\n",
+                   ) if $DEBUG;
+
+      my @new_license = (
+                         $comment_prefix ? $comment_prefix : (),
+                         ( map { $line_prefix . $_ } @template_line ),
+                         $comment_suffix ? $comment_suffix : (),
+                        );
+
+      my $new_license = join("\n", @new_license);
+
+      my( $old_license ) = ( $content =~ m{$allseen_license_rx} );
+
+      print STDERR "old license:\n", "$old_license\n";
+
+      print STDERR "new license:\n", "$new_license\n";
+
+      # replace old license with new text
+      $content =~ s{$allseen_license_rx}{$new_license}ms;
+
+      open( $fh, q{>}, $fname ) or die "couldn't open file ${fname} for writing: $!";
+      print $fh $content;
+      close $fh;
+      exit 0;
+    }
+    exit 0;
+    # TODO: add changed files
+    # TODO: commit signed change
+    # TODO: git review --track ${bname}
+  }
+
+}
+
+END {
+  chdir( $initial_cwd );
+}
