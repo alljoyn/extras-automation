@@ -1,0 +1,66 @@
+#!/usr/bin/perl -w
+use strict;
+
+use JSON::XS;
+use LWP::UserAgent;
+use HTML::Selector::XPath;
+use HTML::TreeBuilder::XPath;
+
+my $json = JSON::XS->new->utf8;
+my $ua = LWP::UserAgent->new;
+
+my $tree = HTML::TreeBuilder::XPath->new;
+
+my $git_host = q{git.allseenalliance.org};
+my $gerrit_port = 29418;
+my $gerrit_host = $git_host;
+
+my( %branch );
+
+# Exceptions to filter out projects known not to be updating licenses can go here.
+my $proj_skip_rx = qr{
+                       (
+                         ^All-Users$ |
+                         ^$
+                       )
+                   }x;
+
+my $repo_data_json_file = '/tmp/alljoyn-repos-data.json';
+if( -f $repo_data_json_file ){
+  my $json_str = do {
+    open( my( $json_fh ), q{<}, $repo_data_json_file )
+      or die "couldn't open json file $repo_data_json_file: $!";
+    local undef $/;
+    <$json_fh>;
+  };
+  %branch = %{ $json->decode( $json_str ) };
+}else{
+
+  my @project = split(/\n/, qx{ssh -p ${gerrit_port} ${gerrit_host} gerrit ls-projects});
+
+  foreach my $proj ( @project ){
+    next if( $proj =~ /$proj_skip_rx/ );
+
+    print("$proj\n");
+
+    my $cgit_url = qq{https://${git_host}/gerrit/${proj}.git};
+    # TODO: gather list of branches here
+    my @remote = split(/\n/, qx{git ls-remote --heads $cgit_url});
+    foreach my $remote (@remote){
+      my($commit_id,$headname) = split(/\s+/, $remote);
+      my($branch) = ($headname =~ m{refs/heads/(.+)});
+
+      my $response = $ua->get("$cgit_url/commit/?h=${branch}&id=${commit_id}");
+      $tree->parse($response->decoded_content);
+      $tree->eof;
+
+      my $xpath_query = q{//*[@id="cgit"]//table[@class="commit-info"]/tbody/tr[1]}
+    }
+
+
+
+  }
+  # TODO: encode as JSON and write to $repo_data_json_file
+}
+
+
