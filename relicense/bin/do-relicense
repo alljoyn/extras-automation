@@ -1,0 +1,31 @@
+#!/usr/bin/perl -w
+use strict;
+
+use JSON::XS;
+
+my $json = JSON::XS->new->utf8;
+
+my( %branch );
+
+my $repo_data_json_file = '/tmp/alljoyn-repos-data.json';
+if( -f $repo_data_json_file ){
+  my $json_str = do {
+    open( my( $json_fh ), q{<}, $repo_data_json_file )
+      or die "couldn't open json file $repo_data_json_file: $!";
+    local undef $/;
+    <$json_fh>;
+  };
+  %branch = %{ $json->decode( $json_str ) };
+}else{
+
+  @project = split(/\n/, qx{ssh -p 29418 git.allseenalliance.org gerrit ls-projects});
+
+  foreach my $proj ( @project ){
+    # Exceptions to filter out projects known not to be updating licenses can go here.
+
+    # TODO: gather list of branches here
+  }
+  # TODO: encode as JSON and write to $repo_data_json_file
+}
+
+
