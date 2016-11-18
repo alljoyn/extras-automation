@@ -1,0 +1,7 @@
+Code within this directory will be used to patch the AllJoyn
+repositories to use the new license.
+
+To install the required perl libraries, run bin/setup.sh
+
+To walk the repositories and submit patches to gerrit, run
+bin/do-relicense
