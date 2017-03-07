@@ -9,11 +9,12 @@ export
 ES=0
 
 # Modified files.
+copyright_pattern='Copyright.*Open Connectivity Foundation.*AllJoyn'
 for fn in `git show --pretty="format:" --name-status HEAD| grep -v "^A" | grep -Ei "\.[chm]$|\.c[cs]$|\.cpp$|\.mm$|\.ino$|\.py$|\.sh$|\.java$|SConscript$|SConstruct$" | awk '{print $2}'|grep -v "^external"`; do
   if [ -f $fn ]; then
-    FES=`head -40 $fn|grep "Copyright AllSeen Alliance. All rights reserved." | wc -l`
+    FES=`head -40 $fn|grep "$copyright_pattern" | wc -l`
     if [ "$FES" != "1" ]; then
-      echo $fn fails copyright check. Regex for a valid copyright will be in the form of "Copyright AllSeen Alliance. All rights reserved." for modified files>>copyright-modified-fail.log
+      echo $fn fails copyright check. Regex for a valid copyright will be in the form of "$copyright_pattern" for modified files>>copyright-modified-fail.log
       ES=1
     else
       echo $fn passes copyright check>>copyright-pass.log
@@ -24,9 +25,9 @@ done
 # Added files.
 for fn in `git show --pretty="format:" --name-status HEAD| grep "^A" | grep -Ei "\.[chm]$|\.c[cs]$|\.cpp$|\.mm$|\.ino$|\.py$|\.sh$|\.java$|SConscript$|SConstruct$" | awk '{print $2}'|grep -v "^external"`; do
   if [ -f $fn ]; then
-    FES=`head -40 $fn|grep "Copyright AllSeen Alliance. All rights reserved." | wc -l`
+    FES=`head -40 $fn|grep "$copyright_pattern" | wc -l`
     if [ "$FES" != "1" ]; then
-      echo $fn fails copyright check. Valid copyright regex "Copyright AllSeen Alliance. All rights reserved." for added files>>copyright-added-fail.log
+      echo $fn fails copyright check. Valid copyright regex "$copyright_pattern" for added files>>copyright-added-fail.log
       ES=1
     else
       echo $fn passes copyright check>>copyright-pass.log
