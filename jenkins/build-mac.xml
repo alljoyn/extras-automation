@@ -7,11 +7,16 @@
         <format property="xtstamp"          pattern="yyyyMMdd-HHmmss-SSS" />
     </tstamp>
 
+    <property environment="env"/>
+    <property name="label" value="${env.JOB_NAME}-${env.BUILD_NUMBER}"/>
+
     <property file="${basedir}/build.properties" />
     <property name="workingDir"             location="${user.dir}" />
 
     <property name="releaseVersion"         value="0.0.1" />
-    <property name="scons.os"               value="darwin" />
+    <property name="scons.osDarwin"         value="darwin" />
+    <property name="scons.osiOS"            value="iOS" />
+    <property name="ajf"                    value="AllJoynFramework" />
     <property name="sdkName"                value="alljoyn-${releaseVersion}-osx_ios-sdk" />
     <property name="scons.br"               value="on" />
     <condition property="sdkToc.excludes"   value="**/docs/html/**" else="**/docs/html/**" >
@@ -25,45 +30,26 @@
     </condition>
 
     <property name="sconsDir"               location="${workingDir}" />
-    <property name="sconsDist.x86.dbg"      location="${sconsDir}/build/${scons.os}/x86/debug/dist" />
-    <property name="sconsDist.x86.rel"      location="${sconsDir}/build/${scons.os}/x86/release/dist" />
-    <property name="sconsDist.arm.dbg"      location="${sconsDir}/build/${scons.os}/arm/iphoneos/debug/dist" />
-    <property name="sconsDist.arm.rel"      location="${sconsDir}/build/${scons.os}/arm/iphoneos/release/dist" />
-    <property name="sconsDist.armv7.dbg"    location="${sconsDir}/build/${scons.os}/armv7/iphoneos/debug/dist" />
-    <property name="sconsDist.armv7.rel"    location="${sconsDir}/build/${scons.os}/armv7/iphoneos/release/dist" />
-    <property name="sconsDist.armv7s.dbg"   location="${sconsDir}/build/${scons.os}/armv7s/iphoneos/debug/dist" />
-    <property name="sconsDist.armv7s.rel"   location="${sconsDir}/build/${scons.os}/armv7s/iphoneos/release/dist" />
-    <property name="sconsDist.arm64.dbg"    location="${sconsDir}/build/${scons.os}/arm64/iphoneos/debug/dist" />
-    <property name="sconsDist.arm64.rel"    location="${sconsDir}/build/${scons.os}/arm64/iphoneos/release/dist" />
-    <property name="sconsDist.sim.dbg"      location="${sconsDir}/build/${scons.os}/arm/iphonesimulator/debug/dist" />
-    <property name="sconsDist.sim.rel"      location="${sconsDir}/build/${scons.os}/arm/iphonesimulator/release/dist" />
-    <!-- these props intentionally duplicate existing props -->
-    <property name="sconsDist.arm386.dbg"   location="${sconsDir}/build/${scons.os}/arm/iphoneos/debug/dist" />
-    <property name="sconsDist.arm386.rel"   location="${sconsDir}/build/${scons.os}/arm/iphoneos/release/dist" />
-    <property name="sconsDist.sim386.dbg"   location="${sconsDir}/build/${scons.os}/arm/iphonesimulator/debug/dist" />
-    <property name="sconsDist.sim386.rel"   location="${sconsDir}/build/${scons.os}/arm/iphonesimulator/release/dist" />
-    <condition property="arm64.exists" >
-        <and>
-            <available file="${sconsDist.arm64.dbg}" type="dir" />
-            <available file="${sconsDist.arm64.rel}" type="dir" />
-        </and>
-    </condition>
+    <property name="sconsDist.darwin.dbg"   location="${sconsDir}/build/${scons.osDarwin}/${ajf}/Debug" />
+    <property name="sconsDist.darwin.rel"   location="${sconsDir}/build/${scons.osDarwin}/${ajf}/Release" />
+    <property name="sconsDist.darwin.inc"   location="${sconsDir}/build/${scons.osDarwin}/${ajf}/include" />
+    <property name="sconsDist.iOS.dbg"      location="${sconsDir}/build/${scons.osiOS}/${ajf}/Debug" />
+    <property name="sconsDist.iOS.rel"      location="${sconsDir}/build/${scons.osiOS}/${ajf}/Release" />
+    <property name="sconsDist.iOS.inc"      location="${sconsDir}/build/${scons.osiOS}/${ajf}/include" />
+
+    <property name="sconsDist.darwin.x86_64.dbg"  location="${sconsDir}/build/${scons.osDarwin}/x86_64/debug/dist" />
+    <property name="sconsDist.darwin.x86_64.rel"  location="${sconsDir}/build/${scons.osDarwin}/x86_64/release/dist" />
 
     <property name="genversion"             location="${sconsDir}/build_core/tools/scons/genversion.py" />
     <property name="gitDir"                 location="${sconsDir}/.git" />
     <property name="manifest"               location="${sconsDir}/manifest.txt" />
-    <property name="manifest.x86.dbg"       location="${sconsDist.x86.dbg}/manifest.txt" />
-    <property name="manifest.x86.rel"       location="${sconsDist.x86.rel}/manifest.txt" />
-    <property name="manifest.arm.dbg"       location="${sconsDist.arm.dbg}/manifest.txt" />
-    <property name="manifest.arm.rel"       location="${sconsDist.arm.rel}/manifest.txt" />
-    <property name="manifest.armv7.dbg"     location="${sconsDist.armv7.dbg}/manifest.txt" />
-    <property name="manifest.armv7.rel"     location="${sconsDist.armv7.rel}/manifest.txt" />
-    <property name="manifest.armv7s.dbg"    location="${sconsDist.armv7s.dbg}/manifest.txt" />
-    <property name="manifest.armv7s.rel"    location="${sconsDist.armv7s.rel}/manifest.txt" />
-    <property name="manifest.arm64.rel"     location="${sconsDist.arm64.rel}/manifest.txt" />
-    <property name="manifest.arm64.dbg"     location="${sconsDist.arm64.dbg}/manifest.txt" />
-    <property name="manifest.sim.dbg"       location="${sconsDist.sim.dbg}/manifest.txt" />
-    <property name="manifest.sim.rel"       location="${sconsDist.sim.rel}/manifest.txt" />
+    <property name="manifest.darwin.dbg"    location="${sconsDist.darwin.dbg}/manifest.txt" />
+    <property name="manifest.darwin.rel"    location="${sconsDist.darwin.rel}/manifest.txt" />
+    <property name="manifest.darwin.inc"    location="${sconsDist.darwin.inc}/manifest.txt" />
+    <property name="manifest.iOS.rel"       location="${sconsDist.iOS.dbg}/manifest.txt" />
+    <property name="manifest.iOS.dbg"       location="${sconsDist.iOS.rel}/manifest.txt" />
+    <property name="manifest.iOS.inc"       location="${sconsDist.iOS.inc}/manifest.txt" />
+
     <condition property="doManifest" >
         <and>
             <available file="${genversion}" type="file" />
@@ -76,22 +62,15 @@
     <property name="sdkDir"                 location="${sdkWork}/${sdkName}" />
     <property name="sdkZip"                 location="${sdkWork}/${sdkName}.zip" />
     <property name="sdkToc"                 location="${sdkWork}/${sdkName}.txt" />
-    <property name="sdkDist.x86.dbg"        location="${sdkDir}/build/${scons.os}/x86/debug/dist" />
-    <property name="sdkDist.x86.rel"        location="${sdkDir}/build/${scons.os}/x86/release/dist" />
-    <property name="sdkDist.arm.dbg"        location="${sdkDir}/build/${scons.os}/arm/iphoneos/debug/dist" />
-    <property name="sdkDist.arm.rel"        location="${sdkDir}/build/${scons.os}/arm/iphoneos/release/dist" />
-    <property name="sdkDist.armv7.dbg"      location="${sdkDir}/build/${scons.os}/armv7/iphoneos/debug/dist" />
-    <property name="sdkDist.armv7.rel"      location="${sdkDir}/build/${scons.os}/armv7/iphoneos/release/dist" />
-    <property name="sdkDist.armv7s.dbg"     location="${sdkDir}/build/${scons.os}/armv7s/iphoneos/debug/dist" />
-    <property name="sdkDist.armv7s.rel"     location="${sdkDir}/build/${scons.os}/armv7s/iphoneos/release/dist" />
-    <property name="sdkDist.arm64.dbg"      location="${sdkDir}/build/${scons.os}/arm64/iphoneos/debug/dist" />
-    <property name="sdkDist.arm64.rel"      location="${sdkDir}/build/${scons.os}/arm64/iphoneos/release/dist" />
-    <property name="sdkDist.sim.dbg"        location="${sdkDir}/build/${scons.os}/arm/iphonesimulator/debug/dist" />
-    <property name="sdkDist.sim.rel"        location="${sdkDir}/build/${scons.os}/arm/iphonesimulator/release/dist" />
-    <property name="sdkDist.arm386.dbg"     location="${sdkDir}/build/${scons.os}/i386/iphoneos/debug/dist" />
-    <property name="sdkDist.arm386.rel"     location="${sdkDir}/build/${scons.os}/i386/iphoneos/release/dist" />
-    <property name="sdkDist.sim386.dbg"     location="${sdkDir}/build/${scons.os}/i386/iphonesimulator/debug/dist" />
-    <property name="sdkDist.sim386.rel"     location="${sdkDir}/build/${scons.os}/i386/iphonesimulator/release/dist" />
+    <property name="sdkDist.darwin.dbg"        location="${sdkDir}/build/${scons.osDarwin}/${ajf}/Debug" />
+    <property name="sdkDist.darwin.rel"        location="${sdkDir}/build/${scons.osDarwin}/${ajf}/Release" />
+    <property name="sdkDist.darwin.inc"        location="${sdkDir}/build/${scons.osDarwin}/${ajf}/include" />
+    <property name="sdkDist.iOS.dbg"        location="${sdkDir}/build/${scons.osiOS}/${ajf}/Debug" />
+    <property name="sdkDist.iOS.rel"        location="${sdkDir}/build/${scons.osiOS}/${ajf}/Release" />
+    <property name="sdkDist.iOS.inc"        location="${sdkDir}/build/${scons.osiOS}/${ajf}/include" />
+
+    <property name="sdkDist.darwin.x86_64.dbg" location="${sdkDir}/build/${scons.osDarwin}/x86_64/debug/dist" />
+    <property name="sdkDist.darwin.x86_64.rel" location="${sdkDir}/build/${scons.osDarwin}/x86_64/release/dist" />
 
     <property name="etcDir"                 location="${basedir}/etc" />
     <property name="unwantedList"           location="${etcDir}/unwanted.list" />
@@ -173,17 +152,15 @@
     </macrodef> <!-- xzip -->
 
     <macrodef name="xDist" description="Deploy one Dist" >
-        <attribute name="argv1" description="CPU/bin tag: x86, arm, armv7, armv7s, arm64, or sim" />
-        <attribute name="argv2" description="variant tag: dbg or rel" />
         <sequential>
-            <echo level="verbose" message="xDist @{argv1} @{argv2}" />
-            <xcpio argv1="${sconsDist.@{argv1}.@{argv2}}" argv2="${sdkDist.@{argv1}.@{argv2}}" >
+            <echo level="verbose" message="xDist" />
+            <xcpio argv1="${sconsDist}" argv2="${sdkDist}" >
                 <include name="**" />
                 <excludesfile name="${unwantedList}" />
-                <exclude name="cpp/docs/**" />  <!-- SDK for osx_ios carries cpp docs separately, outside of "dist" -->
-                <exclude name="*" />            <!-- SDK for osx_ios carries top level "dist" files separately -->
-                <include name="manifest.txt" />
             </xcpio>
+            <xcp argv1="${sconsDir}" argv2="${sdkDist}" >
+                <include name="README.md" />
+            </xcp>
         </sequential>
     </macrodef> <!-- xDist -->
 
@@ -257,39 +234,82 @@
 
     <!-- targets -->
 
-    <target name="init" >
+<target name="init" >
 
-        <echo>
-scons.os        ${scons.os}
-sconsDir        ${sconsDir}
-sconsDist.x86.dbg ${sconsDist.x86.dbg}
+<echo>
+scons.osDarwin       ${scons.osDarwin}
+scons.osiOS          ${scons.osiOS}
+sconsDir             ${sconsDir}
+sconsDist.darwin.dbg ${sconsDist.darwin.dbg}
+sconsDist.darwin.rel ${sconsDist.darwin.rel}
+sconsDist.darwin.inc ${sconsDist.darwin.inc}
+sconsDist.iOS.dbg    ${sconsDist.iOS.dbg}
+sconsDist.iOS.rel    ${sconsDist.iOS.rel}
+sconsDist.iOS.inc    ${sconsDist.iOS.inc}
+
+sconsDist.darwin.x86_64.dbg ${sconsDist.darwin.x86_64.dbg}
+sconsDist.darwin.x86_64.rel ${sconsDist.darwin.x86_64.rel}
+
 doManifest      ${doManifest}
 
-releaseVersion  ${releaseVersion}
-sdkDir          ${sdkDir}
-sdkZip          ${sdkZip}
-sdkToc          ${sdkToc}</echo>
+releaseVersion      ${releaseVersion}
+jenkinsWorkspace    ${jenkinsWorkspace}
+sdkDir              ${sdkDir}
+sdkZip              ${sdkZip}
+sdkToc              ${sdkToc}
+sdkDist.darwin.dbg  ${sdkDist.darwin.dbg}
+sdkDist.darwin.rel  ${sdkDist.darwin.rel}
+sdkDist.darwin.inc  ${sdkDist.darwin.inc}
+sdkDist.iOS.dbg     ${sdkDist.iOS.dbg}
+sdkDist.iOS.rel     ${sdkDist.iOS.rel}
+sdkDist.iOS.inc     ${sdkDist.iOS.inc}
 
-        <echo level="verbose" >
+sdkDist.darwin.x86_64.dbg ${sdkDist.darwin.x86_64.dbg}
+sdkDist.darwin.x86_64.rel ${sdkDist.darwin.x86_64.rel}
+
+</echo>
+
+<echo level="verbose" >
 basedir         ${basedir}
 workingDir      ${workingDir}
 
-scons.os        ${scons.os}
+scons.osDarwin  ${scons.osDarwin}
+scons.osiOS     ${scons.osiOS}
 scons.br        ${scons.br}
 sconsDir        ${sconsDir}
-sconsDist.x86.dbg ${sconsDist.x86.dbg}
+
+sconsDist.darwin.dbg ${sconsDist.darwin.dbg}
+sconsDist.darwin.rel ${sconsDist.darwin.rel}
+sconsDist.darwin.inc ${sconsDist.darwin.inc}
+sconsDist.iOS.dbg    ${sconsDist.iOS.dbg}
+sconsDist.iOS.rel    ${sconsDist.iOS.rel}
+sconsDist.iOS.inc    ${sconsDist.iOS.inc}
+
+sconsDist.darwin.x86_64.dbg ${sconsDist.darwin.x86_64.dbg}
+sconsDist.darwin.x86_64.rel ${sdkDist.darwin.x86_64.rel}
 
 genversion      ${genversion}
 manifest        ${manifest}
-manifest.x86.dbg ${manifest.x86.dbg}
+manifest.x86_64.dbg ${manifest.x86_64.dbg}
 doManifest      ${doManifest}
 
 releaseVersion  ${releaseVersion}
+jenkinsWorkspace ${jenkinsWorkspace}
 sdkName         ${sdkName}
 sdkWork         ${sdkWork}
 sdkTmp          ${sdkTmp}
 sdkDir          ${sdkDir}
-sdkDist.x86.dbg ${sdkDist.x86.dbg}
+
+sdkDist.darwin.dbg  ${sdkDist.darwin.dbg}
+sdkDist.darwin.rel  ${sdkDist.darwin.rel}
+sdkDist.darwin.inc  ${sdkDist.darwin.inc}
+sdkDist.iOS.dbg     ${sdkDist.iOS.dbg}
+sdkDist.iOS.rel     ${sdkDist.iOS.rel}
+sdkDist.iOS.inc     ${sdkDist.iOS.inc}
+
+sdkDist.darwin.x86_64.dbg ${sdkDist.darwin.x86_64.dbg}
+sdkDist.darwin.x86_64.rel ${sdkDist.darwin.x86_64.rel}
+
 sdkZip          ${sdkZip}
 sdkToc          ${sdkToc}
 
@@ -301,120 +321,89 @@ extrasList      ${extrasList}
 extrasDir.exists    ${extrasDir.exists}
 extrasList.exists   ${extrasList.exists}</echo>
 
-        <fail message="available checks failed" status="1" >
-            <condition>
+
+<fail message="available checks failed" status="1" >
+    <condition>
+        <not>
+            <and>
+                <available file="${sconsDir}"                  type="dir" />
+                <available file="${sconsDist.darwin.dbg}"      type="dir" />
+                <available file="${sconsDist.darwin.rel}"      type="dir" />
+                <available file="${sconsDist.darwin.inc}"      type="dir" />
+                <available file="${sconsDist.iOS.dbg}"         type="dir" />
+                <available file="${sconsDist.iOS.rel}"         type="dir" />
+                <available file="${sconsDist.iOS.inc}"         type="dir" />
+<!--                        <available file="${unwantedList}"              type="file" /> -->
+                <!-- extras are optional -->
+            </and>
+        </not>
+    </condition>
+</fail>
+
+
+<fail message="contains checks failed" status="1" >
+    <condition>
+        <or>
+            <contains string="${sconsDir}/build/${scons.osDarwin}"    substring="${sdkDir}" />
+            <contains string="${sconsDir}/build/${scons.osiOS}"    substring="${sdkDir}" />
+            <contains string="${sconsDir}/alljoyn_objc"         substring="${sdkDir}" />
+            <contains string="${sconsDir}/build/services/about" substring="${sdkDir}" />
+        </or>
+    </condition>
+</fail>
+
+<fail message="extrasList.exists but not extrasDir.exists" status="1" >
+    <condition>
+        <and>
+            <isset property="extrasList.exists" />
                 <not>
-                    <and>
-                        <available file="${sconsDir}"               type="dir" />
-                        <available file="${sconsDist.x86.dbg}"      type="dir" />
-                        <available file="${sconsDist.x86.rel}"      type="dir" />
-                        <available file="${sconsDist.arm.dbg}"      type="dir" />
-                        <available file="${sconsDist.arm.rel}"      type="dir" />
-                        <available file="${sconsDist.armv7.dbg}"    type="dir" />
-                        <available file="${sconsDist.armv7.rel}"    type="dir" />
-                        <available file="${sconsDist.armv7s.dbg}"   type="dir" />
-                        <available file="${sconsDist.armv7s.rel}"   type="dir" />
-                        <available file="${sconsDist.sim.dbg}"      type="dir" />
-                        <available file="${sconsDist.sim.rel}"      type="dir" />
-                        <available file="${unwantedList}"           type="file" />
-                        <!-- extras are optional -->
-                    </and>
+                    <isset property="extrasDir.exists" />
                 </not>
-            </condition>
-        </fail>
+        </and>
+    </condition>
+</fail>
 
-        <fail message="contains checks failed" status="1" >
-            <condition>
-                <or>
-                    <contains string="${sconsDir}/build/${scons.os}"    substring="${sdkDir}" />
-                    <contains string="${sconsDir}/alljoyn_objc"         substring="${sdkDir}" />
-                    <contains string="${sconsDir}/build/services/about" substring="${sdkDir}" />
-                </or>
-            </condition>
-        </fail>
+<fail message="extrasList.exists but no files found" status="1" >
+    <condition>
+        <and>
+            <isset property="extrasList.exists" />
+                <resourcecount count="0" >
+                    <fileset dir="${extrasDir}" >
+                        <includesfile name="${extrasList}" />
+                    </fileset>
+                </resourcecount>
+        </and>
+    </condition>
+</fail>
 
-        <fail message="extrasList.exists but not extrasDir.exists" status="1" >
-            <condition>
-                <and>
-                    <isset property="extrasList.exists" />
-                    <not>
-                        <isset property="extrasDir.exists" />
-                    </not>
-                </and>
-            </condition>
-        </fail>
+<fail message="not mac" status="1" >
+    <condition>
+        <not>
+            <or>
+                <os family="mac" />
+            </or>
+        </not>
+    </condition>
+</fail>
 
-        <fail message="extrasList.exists but no files found" status="1" >
-            <condition>
-                <and>
-                    <isset property="extrasList.exists" />
-                    <resourcecount count="0" >
-                        <fileset dir="${extrasDir}" >
-                            <includesfile name="${extrasList}" />
-                        </fileset>
-                    </resourcecount>
-                </and>
-            </condition>
-        </fail>
+</target> <!-- init -->
 
-        <fail message="not linux or mac" status="1" >
-            <condition>
-                <not>
-                    <or>
-                        <os family="unix" />
-                        <os family="mac" />
-                    </or>
-                </not>
-            </condition>
-        </fail>
-
-    </target> <!-- init -->
-
-    <target name="manifest-no-arm64" depends="init" unless="arm64.exists" >
+    <target name="manifest" depends="init" if="${doManifest}" >
         <local  name="gitVersion" />
         <exec executable="python" dir="${sconsDir}" outputproperty="gitVersion" logError="true" inputstring="" searchpath="true" failonerror="true" >
             <arg value="${genversion}" />
         </exec>
         <echo file="${manifest}"            force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.x86.dbg}"    force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.x86.rel}"    force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.arm.dbg}"    force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.arm.rel}"    force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.armv7.dbg}"  force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.armv7.rel}"  force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.armv7s.dbg}" force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.armv7s.rel}" force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.sim.dbg}"    force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.sim.rel}"    force="true" >${gitVersion}${line.separator}</echo>
+        <echo file="${manifest.darwin.dbg}"    force="true" >${gitVersion}${line.separator}</echo>
+        <echo file="${manifest.darwin.rel}"    force="true" >${gitVersion}${line.separator}</echo>
+        <echo file="${manifest.darwin.inc}"    force="true" >${gitVersion}${line.separator}</echo>
+        <echo file="${manifest.iOS.rel}"    force="true" >${gitVersion}${line.separator}</echo>
+        <echo file="${manifest.iOS.dbg}"  force="true" >${gitVersion}${line.separator}</echo>
+        <echo file="${manifest.iOS.inc}"  force="true" >${gitVersion}${line.separator}</echo>
         <echo>
-gitVersion  ${gitVersion}
+            gitVersion  ${gitVersion}
         </echo>
     </target>
-
-    <target name="manifest-with-arm64" depends="init" if="arm64.exists" >
-        <local  name="gitVersion" />
-        <exec executable="python" dir="${sconsDir}" outputproperty="gitVersion" logError="true" inputstring="" searchpath="true" failonerror="true" >
-            <arg value="${genversion}" />
-        </exec>
-        <echo file="${manifest}"            force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.x86.dbg}"    force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.x86.rel}"    force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.arm.dbg}"    force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.arm.rel}"    force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.armv7.dbg}"  force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.armv7.rel}"  force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.armv7s.dbg}" force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.armv7s.rel}" force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.arm64.dbg}"  force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.arm64.rel}"  force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.sim.dbg}"    force="true" >${gitVersion}${line.separator}</echo>
-        <echo file="${manifest.sim.rel}"    force="true" >${gitVersion}${line.separator}</echo>
-        <echo>
-gitVersion  ${gitVersion}
-        </echo>
-    </target>
-
-    <target name="manifest" depends="manifest-no-arm64, manifest-with-arm64" if="${doManifest}" />
 
     <target name="clean" depends="manifest" >
         <local  name="sdkDir.parent" />
@@ -432,89 +421,40 @@ gitVersion  ${gitVersion}
         <delete file="${sdkToc}" />
     </target>
 
-    <target name="dist-no-arm64" depends="clean" unless="arm64.exists" >
-        <xDist argv1="x86"      argv2="dbg" />
-        <xDist argv1="x86"      argv2="rel" />
-        <xDist argv1="arm"      argv2="dbg" />
-        <xDist argv1="arm"      argv2="rel" />
-        <xDist argv1="armv7"    argv2="dbg" />
-        <xDist argv1="armv7"    argv2="rel" />
-        <xDist argv1="armv7s"   argv2="dbg" />
-        <xDist argv1="armv7s"   argv2="rel" />
-        <xDist argv1="sim"      argv2="dbg" />
-        <xDist argv1="sim"      argv2="rel" />
-        <xDist argv1="arm386"   argv2="dbg" />
-        <xDist argv1="arm386"   argv2="rel" />
-        <xDist argv1="sim386"   argv2="dbg" />
-        <xDist argv1="sim386"   argv2="rel" />
+    <target name="dist" depends="clean" >
+
         <xcpio argv1="${sconsDir}/alljoyn_objc"     argv2="${sdkDir}/alljoyn_objc" >
             <include name="**" />
         </xcpio>
+
         <xcpio argv1="${sconsDir}/services/about"   argv2="${sdkDir}/services/about" >
             <include name="**" />
             <exclude name="build/**" />
             <exclude name="java/**" />
-            <exclude name="cpp/docs/html/**" />
         </xcpio>
         <xcp   argv1="${sconsDir}" argv2="${sdkDir}" >
             <include name="manifest.txt" />
             <include name="README.md" />
-        </xcp>
-        <xcp   argv1="${sconsDir}/build/${scons.os}/x86/debug/dist"     argv2="${sdkDir}" >
             <include name="README.txt" />
+        </xcp>
+
+         <xcp   argv1="${sconsDir}/alljoyn_core/docs" argv2="${sdkDir}" >
             <include name="ReleaseNotes.txt" />
         </xcp>
-        <xcpio argv1="${sconsDir}/build/${scons.os}/x86/debug/dist/cpp/docs"    argv2="${sdkDir}/build/docs" >
-            <include name="**" />
-        </xcpio>
-        <xcp   argv1="${sconsDir}/build/${scons.os}/x86/debug/dist"     argv2="${sdkDir}/build/docs" >
-            <include name="AllJoyn_API_Changes_cpp.txt" />
-        </xcp>
-    </target>
 
-    <target name="dist-with-arm64" depends="clean" if="arm64.exists" >
-        <xDist argv1="x86"      argv2="dbg" />
-        <xDist argv1="x86"      argv2="rel" />
-        <xDist argv1="arm"      argv2="dbg" />
-        <xDist argv1="arm"      argv2="rel" />
-        <xDist argv1="armv7"    argv2="dbg" />
-        <xDist argv1="armv7"    argv2="rel" />
-        <xDist argv1="armv7s"   argv2="dbg" />
-        <xDist argv1="armv7s"   argv2="rel" />
-        <xDist argv1="arm64"    argv2="dbg" />
-        <xDist argv1="arm64"    argv2="rel" />
-        <xDist argv1="sim"      argv2="dbg" />
-        <xDist argv1="sim"      argv2="rel" />
-        <xDist argv1="arm386"   argv2="dbg" />
-        <xDist argv1="arm386"   argv2="rel" />
-        <xDist argv1="sim386"   argv2="dbg" />
-        <xDist argv1="sim386"   argv2="rel" />
-        <xcpio argv1="${sconsDir}/alljoyn_objc"     argv2="${sdkDir}/alljoyn_objc" >
+        <xcpio argv1="${sconsDir}/build/${scons.osDarwin}/${ajf}"    argv2="${sdkDir}/build/${scons.osDarwin}/${ajf}" >
             <include name="**" />
         </xcpio>
-        <xcpio argv1="${sconsDir}/services/about"   argv2="${sdkDir}/services/about" >
-            <include name="**" />
-            <exclude name="build/**" />
-            <exclude name="java/**" />
-            <exclude name="cpp/docs/html/**" />
-        </xcpio>
-        <xcp   argv1="${sconsDir}" argv2="${sdkDir}" >
-            <include name="manifest.txt" />
-            <include name="README.md" />
-        </xcp>
-        <xcp   argv1="${sconsDir}/build/${scons.os}/x86/debug/dist"     argv2="${sdkDir}" >
-            <include name="README.txt" />
-            <include name="ReleaseNotes.txt" />
-        </xcp>
-        <xcpio argv1="${sconsDir}/build/${scons.os}/x86/debug/dist/cpp/docs"    argv2="${sdkDir}/build/docs" >
-            <include name="**" />
-        </xcpio>
-        <xcp   argv1="${sconsDir}/build/${scons.os}/x86/debug/dist"     argv2="${sdkDir}/build/docs" >
-            <include name="AllJoyn_API_Changes_cpp.txt" />
-        </xcp>
-    </target>
 
-    <target name="dist" depends="dist-no-arm64, dist-with-arm64" />
+        <xcpio argv1="${sconsDir}/build/${scons.osiOS}/${ajf}"    argv2="${sdkDir}/build/${scons.osiOS}/${ajf}" >
+            <include name="**" />
+        </xcpio>
+
+        <xcpio argv1="${sconsDir}/build/${scons.osDarwin}/x86_64"    argv2="${sdkDir}/build/${scons.osDarwin}/x86_64" >
+            <include name="**" />
+        </xcpio>
+
+    </target>
 
     <target name="extras" depends="dist" if="${extrasDir.exists}" >
         <xcpExtras argv1="${sdkDir}" />
