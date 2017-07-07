@@ -515,12 +515,11 @@ apkTmp                      ${apkTmp}</echo>
             </present>
         </dirset>
         <dirset id="apkDirList" dir="${apkDir}" >
-            <include name="cpp/alljoyn_android/**/*" />
             <include name="cpp/samples/**/*" />
             <include name="java/samples/**/*" />
-        <!-- FIXME : remove when cpp/alljoyn_android/bundle_test/** is completely deleted -->
-            <exclude name="cpp/alljoyn_android/bundle_test/**/*" />
-        <!-- end : remove -->
+            <exclude name="java/samples/secure/SecureDoorClient/**/*"/>
+            <exclude name="java/samples/secure/SecureDoorService/**/*"/>
+            <exclude name="java/samples/secure/SecurityManager/**/*"/>
             <present targetdir="${apkDir}" >
                 <mapper type="glob" from="*" to="*/AndroidManifest.xml" />
             </present>
