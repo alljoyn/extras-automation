@@ -744,9 +744,9 @@ echo : ===
     android 1>&2 update project -t "android-${ANDROID_TARGET_API}" -p . -n "$name"
 
     case "$name" in
-    ( Event_Action_Browser )
-        echo : android v4 support for one specific app, Event_Action_Browser
-        cp "${androidSupportV4}" libs
+    ( Event_Action_Browser | ContactsService )
+        echo : android v4 support for app, $name
+        cp "${androidSupportV4}" libs/android-support-v4.jar
         ;;
     esac
 
